@@ -1,0 +1,6 @@
+.idea
+.vscode
+*.iml
+__pycache__
+openapi.yml
+config-*.yml

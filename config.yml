@@ -1,0 +1,32 @@
+environment: dev
+products:
+  - name: Example API Display Name
+    shortName: example-api-display-name
+    description: Example API for automation
+    openAPIPath: openapi.yml
+    version: 1
+    api:
+      publicBasePath: /example/v1
+      authentication:
+        authType: oidc
+        issuerURL: https://oidc-issuer.example.com
+        issuerType: keycloak
+        credentialsLocation: authorization
+        oidcFlows:
+          directAccessGrants: false
+          implicitFlow: false
+          serviceAccounts: true
+          standardFlow: false
+    backends:
+      - id: example_api_backend_name
+        privateBaseURL: http://backend-service:8080
+        path: /
+    applications:
+      - name: example_api_consumer_1
+        client_id: consumer_1
+        client_secret: consumer_1_token
+        account: anonymous
+      - name: example_api_consumer_2
+        client_id: consumer_2
+        client_secret: consumer_2_token
+        account: anonymous
