@@ -70,6 +70,10 @@ def sync(c: ThreeScaleClient, config: Config):
         product = product.create(c)
         sync_applications(c, description, environment, product, product_config, product_system_name, version,
                           proxy_mappings)
+        sync_mappings(client, product, product_config, proxy_mappings)
+        # Promote application
+        proxy = Proxy(service_id=product.id).fetch(c)
+        proxy.promote(c)
 
 
 def sync_applications(c: ThreeScaleClient, description: str, environment: str, product: Product,
@@ -105,9 +109,6 @@ def sync_applications(c: ThreeScaleClient, description: str, environment: str, p
                              authentication_type=AuthenticationType.from_string(product_config.api.authType))
         sync_oidc_flows(c, product, product_config)
         sync_backends(c, backend_name, description, product, product_config)
-        sync_mappings(client, product, product_config, proxy_mappings)
-        # Promote application
-        proxy.promote(c)
 
 
 def fetch_user_id(c: ThreeScaleClient, application_config: ApplicationConfig):
