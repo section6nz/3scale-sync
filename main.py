@@ -68,11 +68,13 @@ def sync(c: ThreeScaleClient, config: Config):
         product = Product(name=product_name, description=description, system_name=product_system_name)
 
         product = product.create(c)
-        sync_applications(c, description, environment, product, product_config, product_system_name, version)
+        sync_applications(c, description, environment, product, product_config, product_system_name, version,
+                          proxy_mappings)
 
 
 def sync_applications(c: ThreeScaleClient, description: str, environment: str, product: Product,
-                      product_config: ProductConfig, product_system_name: str, version: int):
+                      product_config: ProductConfig, product_system_name: str, version: int,
+                      proxy_mappings: List[ProxyMapping]):
     # Delete extra applications
     active_applications = [a.name for a in product_config.applications]
     for application in Application.list(client):
@@ -103,6 +105,7 @@ def sync_applications(c: ThreeScaleClient, description: str, environment: str, p
                              authentication_type=AuthenticationType.from_string(product_config.api.authType))
         sync_oidc_flows(c, product, product_config)
         sync_backends(c, backend_name, description, product, product_config)
+        sync_mappings(client, product, product_config, proxy_mappings)
         # Promote application
         proxy.promote(c)
 
