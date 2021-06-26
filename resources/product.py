@@ -38,7 +38,6 @@ class Product(Resource):
         self.id = id
         self.name = name
         self.state = state
-        self.system_name = system_name if system_name else name.replace('-', '_').replace(' ', '_')
         self.backend_version = backend_version
         self.deployment_option = deployment_option
         self.support_email = support_email
@@ -55,6 +54,10 @@ class Product(Resource):
         self.created_at = created_at
         self.updated_at = updated_at
         self.kwargs = kwargs
+        if not system_name and name:
+            self.system_name = name.replace('-', '_').replace(' ', '_')
+        else:
+            self.system_name = system_name
 
     def fetch(self, client: ThreeScaleClient, system_name: str) -> Union[Product, None]:
         for service in client.services.list():
@@ -92,6 +95,18 @@ class Product(Resource):
     def delete(self, client: ThreeScaleClient):
         if self.id is None:
             raise ValueError('Cannot delete product, entity ID has not yet been fetched.')
+        # Fetch backends in use.
+        usages = BackendUsage(service_id=self.id).list(client)
+        backend_ids = [usage.backend_id for usage in usages]
+        # Delete backend usages.
+        for usage_id, backend_id in [(u.id, u.backend_id) for u in usages]:
+            self.logger.info("Deleting backend usage for backend_id={}".format(backend_id))
+            self.delete_backend_usages(client, usage_id)
+        # Delete backends.
+        for b in backend_ids:
+            backend = Backend.fetch_by_id(client, b)
+            backend.delete(client)
+        # Delete service.
         client.services.delete(entity_id=self.id)
 
     def update_backends(self, client: ThreeScaleClient, backend_id: int, path: str):
@@ -118,7 +133,7 @@ class Product(Resource):
             raise ValueError(
                 'Error updating backend usages: code={}, error={}'.format(response.status_code, response.text))
 
-    def delete_backends(self, client: ThreeScaleClient, backend_id: int):
+    def delete_backend_usages(self, client: ThreeScaleClient, backend_id: int):
         usages = BackendUsage(service_id=self.id).list(client)
         for usage in usages:
             if usage.id == backend_id:

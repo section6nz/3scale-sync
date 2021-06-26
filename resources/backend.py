@@ -25,13 +25,16 @@ class Backend(Resource):
             links=None):
         self.id = id
         self.name = name
-        self.system_name = system_name if system_name else name.replace('-', '_').replace(' ', '_')
         self.description = description
         self.private_endpoint = private_endpoint
         self.account_id = account_id
         self.created_at = created_at
         self.updated_at = updated_at
         self.links = links
+        if not system_name and name:
+            self.system_name = name.replace('-', '_').replace(' ', '_')
+        else:
+            self.system_name = system_name
 
     def fetch(self, client: ThreeScaleClient, system_name: str) -> Union[Backend, None]:
         for backend in client.backends.list():
@@ -97,7 +100,8 @@ class BackendUsage:
         return [BackendUsage(**b['backend_usage']) for b in response.json()]
 
     def delete(self, client: ThreeScaleClient):
-        api_url = f"{client.admin_api_url}/services/{self.service_id}/backend_usages.json"
+        self.logger.info('Deleting backend usage for backend_id={}'.format(self.id))
+        api_url = f"{client.admin_api_url}/services/{self.service_id}/backend_usages/{self.id}.json"
         response = requests.delete(api_url, params={'access_token': client.token})
         self.logger.debug(response.text)
         if not response.ok:

@@ -148,6 +148,8 @@ if __name__ == '__main__':
     parser.add_argument('--3scale_url', dest='url', required=True, help='URL to the 3scale tenant admin.')
     parser.add_argument('--access_token', dest='token', required=True, help='Access token for the 3scale API.')
     parser.add_argument('--config', dest='config', required=False, default='config.yml', help='Path to config file.')
+    parser.add_argument('--delete', dest='delete', required=False, default=False, help='Delete all products.',
+                        action='store_true')
     args = parser.parse_args()
     client = ThreeScaleClient(url=args.url, token=args.token, ssl_verify=True)
 
@@ -157,4 +159,17 @@ if __name__ == '__main__':
             raise ValueError('Invalid config!')
 
     config = parse_config(loaded_config)
-    sync(client, config)
+
+    if args.delete:
+        response = input("WARNING --- Deleting all products in the configuration. Are you sure? y/N: ")
+        if response.upper() == 'Y':
+            logger.warning("Deleting {} products: {}".format(len(config.products), [p.name for p in config.products]))
+            for p in config.products:
+                system_name = p.shortName.replace('-', '_').replace(' ', '_')
+                product = Product().fetch(client, system_name)
+                if not product:
+                    logger.error('Could not find product: {}, system_name={}'.format(p.name, system_name))
+                    exit(1)
+                product.delete(client)
+    else:
+        sync(client, config)
