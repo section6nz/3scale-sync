@@ -66,7 +66,14 @@ class Product(Resource):
         client.services.update(self.id, params)
         return self.fetch(client, self.system_name)
 
-    def create(self, client: ThreeScaleClient, ignore_if_exists=True) -> Product:
+    def create(self, client: ThreeScaleClient, ignore_if_exists=True, deployment_option='self_managed') -> Product:
+        """
+        Create a new product (service) in the 3scale tenant.
+        :param client: 3scale client instance.
+        :param ignore_if_exists: Skip creating if it already exists.
+        :param deployment_option: One of [hosted | self_managed | None]
+        :return: The created product.
+        """
         existing_product = self.fetch(client, self.system_name)
         if existing_product:
             if ignore_if_exists:
@@ -77,7 +84,8 @@ class Product(Resource):
         client.services.create(dict(
             name=self.name,
             system_name=self.system_name,
-            description=self.description
+            description=self.description,
+            deployment_option=deployment_option
         ))
         return self.fetch(client, self.system_name)
 
