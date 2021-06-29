@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import json
 import logging
 import sys
 from typing import List
@@ -57,12 +58,19 @@ def sync(c: ThreeScaleClient, config: Config):
         # Parse OpenAPI spec for product.
         logger.info("Loading mapping paths from OpenAPI config.")
         with open(product_config.openAPIPath, 'r') as oas:
-            openapi = yaml.load(oas.read(), Loader=yaml.FullLoader)
+            if product_config.openAPIPath.endswith('.yml') or product_config.openAPIPath.endswith('.yaml'):
+                openapi = yaml.load(oas.read(), Loader=yaml.FullLoader)
+            elif product_config.openAPIPath.endswith('.json'):
+                openapi = json.loads(oas.read())
+            else:
+                raise ValueError("Invalid file extension for OpenAPI spec, requires YAML or JSON. file={}".format(
+                    product_config.openAPIPath))
 
         proxy_mappings = []
         for path in openapi['paths']:
             definition = openapi['paths'][path]
             for method in [m for m in definition if m in valid_methods]:
+                logger.info("Found mapping in spec: {} {}".format(method, path))
                 proxy_mappings.append(ProxyMapping(http_method=method.upper(), pattern=path + '$', delta=1))
 
         # Create product
