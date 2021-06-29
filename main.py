@@ -185,4 +185,3 @@ if __name__ == '__main__':
                 product.delete(client)
     else:
         sync(client, config, open_api_basedir=args.openapi_basedir)
-        sync(client, config, open_api_basedir=args.openapi_basedir)
