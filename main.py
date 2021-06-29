@@ -47,6 +47,7 @@ def sync(c: ThreeScaleClient, config: Config):
     # TODO: Create user if not exists
     # Product variables
     environment = config.environment
+    valid_methods = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace']
     for product_config in config.products:
         product_name = product_config.name
         description = product_config.description
@@ -61,7 +62,7 @@ def sync(c: ThreeScaleClient, config: Config):
         proxy_mappings = []
         for path in openapi['paths']:
             definition = openapi['paths'][path]
-            for method in definition:
+            for method in [m for m in definition if m in valid_methods]:
                 proxy_mappings.append(ProxyMapping(http_method=method.upper(), pattern=path + '$', delta=1))
 
         # Create product
