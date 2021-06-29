@@ -2,6 +2,7 @@
 import argparse
 import json
 import logging
+import os.path
 import sys
 from typing import List
 
@@ -44,7 +45,7 @@ def sync_mappings(client: ThreeScaleClient, product: Product, product_config: Pr
         mapping = mappingConfig.create(client, product.id)
 
 
-def sync(c: ThreeScaleClient, config: Config):
+def sync(c: ThreeScaleClient, config: Config, open_api_basedir='.'):
     # TODO: Create user if not exists
     # Product variables
     environment = config.environment
@@ -57,7 +58,7 @@ def sync(c: ThreeScaleClient, config: Config):
 
         # Parse OpenAPI spec for product.
         logger.info("Loading mapping paths from OpenAPI config.")
-        with open(product_config.openAPIPath, 'r') as oas:
+        with open(os.path.join(open_api_basedir, product_config.openAPIPath), 'r') as oas:
             if product_config.openAPIPath.endswith('.yml') or product_config.openAPIPath.endswith('.yaml'):
                 openapi = yaml.load(oas.read(), Loader=yaml.FullLoader)
             elif product_config.openAPIPath.endswith('.json'):
@@ -157,6 +158,8 @@ if __name__ == '__main__':
     parser.add_argument('--3scale_url', dest='url', required=True, help='URL to the 3scale tenant admin.')
     parser.add_argument('--access_token', dest='token', required=True, help='Access token for the 3scale API.')
     parser.add_argument('--config', dest='config', required=False, default='config.yml', help='Path to config file.')
+    parser.add_argument('--openapi_basedir', dest='openapi_basedir', required=False, default='.',
+                        help='Directory root of OpenAPI specification files.')
     parser.add_argument('--delete', dest='delete', required=False, default=False, help='Delete all products.',
                         action='store_true')
     args = parser.parse_args()
@@ -181,4 +184,5 @@ if __name__ == '__main__':
                     exit(1)
                 product.delete(client)
     else:
-        sync(client, config)
+        sync(client, config, open_api_basedir=args.openapi_basedir)
+        sync(client, config, open_api_basedir=args.openapi_basedir)
