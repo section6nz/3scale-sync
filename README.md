@@ -22,6 +22,8 @@ products:
     description: Example API for automation # Description
     openAPIPath: openapi.yml  # Path to OpenAPI definition.
     version: 1  # Version of this product.
+    stagingPublicURL: https://staging-url.com # Staging Public Base URL (optional)
+    productionPublicURL: https://production-url.com # Production Public Base URL (optional)
     api:
       publicBasePath: /example/v1 # Base API path prefix for this product in the tenant.
       authentication:

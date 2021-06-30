@@ -110,7 +110,7 @@ class Proxy:
     def update(self, client: ThreeScaleClient, oidc_issuer_endpoint=None, oidc_issuer_type=None,
                credentials_location=None, auth_app_id=None, auth_app_key=None, auth_user_key=None,
                jwt_claim_with_client_id=None, jwt_claim_with_client_id_type=None,
-               authentication_type: AuthenticationType = None) -> Proxy:
+               authentication_type: AuthenticationType = None, sandbox_endpoint=None, endpoint=None) -> Proxy:
         """
         Update configuration on a proxy (product). Note: this is different to proxy configuration.
         :param oidc_issuer_type: One of [keycloak | rest]
@@ -134,7 +134,9 @@ class Proxy:
             auth_app_key=auth_app_key,
             auth_user_key=auth_user_key,
             jwt_claim_with_client_id=jwt_claim_with_client_id,
-            jwt_claim_with_client_id_type=jwt_claim_with_client_id_type
+            jwt_claim_with_client_id_type=jwt_claim_with_client_id_type,
+            sandbox_endpoint=sandbox_endpoint,
+            endpoint=endpoint
         )
         self.logger.debug(proxy_params)
         proxy_response = requests.patch(api_url, params={'access_token': client.token}, data=proxy_params)

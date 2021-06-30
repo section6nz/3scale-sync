@@ -5,6 +5,8 @@ products:
     description: Example API for automation
     openAPIPath: openapi.yml
     version: 1
+    stagingPublicURL: https://staging-tenant-api.apps.integration-non-production.ds.ahunga.co.nz:443
+#    productionPublicURL: https://production-tenant-api.apps.integration-non-production.ds.ahunga.co.nz:443
     api:
       publicBasePath: /example/v1
       authentication:

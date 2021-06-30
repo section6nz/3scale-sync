@@ -116,7 +116,9 @@ def sync_applications(c: ThreeScaleClient, description: str, environment: str, p
         proxy = proxy.update(c, oidc_issuer_endpoint=product_config.api.issuerURL,
                              oidc_issuer_type=product_config.api.issuerType,
                              credentials_location=product_config.api.credentialsLocation,
-                             authentication_type=AuthenticationType.from_string(product_config.api.authType))
+                             authentication_type=AuthenticationType.from_string(product_config.api.authType),
+                             sandbox_endpoint=product_config.stagingPublicURL,
+                             endpoint=product_config.productionPublicURL)
         sync_oidc_flows(c, product, product_config)
         sync_backends(c, backend_name, description, product, product_config)
 
