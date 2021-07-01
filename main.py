@@ -118,7 +118,7 @@ def sync_applications(c: ThreeScaleClient, description: str, environment: str, p
         application = Application(name=application_name, client_id=application_config.client_id,
                                   client_secret=application_config.client_secret,
                                   description=description, account_id=user_id, plan_id=application_plan.id)
-        application = application.create(c)
+        application = application.create(c, delete_if_exists=True)
         # Configure authentication
         proxy = Proxy(service_id=product.id).fetch(c)
         proxy = proxy.update(c, oidc_issuer_endpoint=product_config.api.issuerURL,

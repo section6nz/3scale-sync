@@ -72,7 +72,7 @@ class Application(Resource):
         return None
 
     def create(self, client: ThreeScaleClient, application_id=None, application_key=None, redirect_url=None,
-               ignore_if_exists=True) -> Application:
+               ignore_if_exists=True, delete_if_exists=False) -> Application:
         try:
             assert self.account_id is not None
             assert self.plan_id is not None
@@ -84,10 +84,13 @@ class Application(Resource):
         # Check for existing application
         existing_application = self.fetch(client, self.name)
         if existing_application:
-            if ignore_if_exists:
+            if delete_if_exists:
+                self.logger.info("Application %s already exists, deleting.", self.name)
+                existing_application.delete(client)
+            elif ignore_if_exists:
                 self.logger.info("Application %s already exists, not creating.", self.name)
                 return existing_application
-            if not ignore_if_exists:
+            else:
                 raise ValueError("Application {} already exists!".format(self.name))
 
         api_url = f"{client.admin_api_url}/accounts/{self.account_id}/applications.json"
@@ -158,6 +161,7 @@ class Application(Resource):
     def update(self, client: ThreeScaleClient, **kwargs) -> Application:
         api_url = f"{client.admin_api_url}/accounts/{self.account_id}/applications/{self.id}.json"
         response = requests.put(api_url, params={'access_token': client.token}, data=kwargs)
+        self.logger.debug(response.text)
         if not response.ok:
             raise ValueError(
                 'Error updating application {}, code={}, error={}'
