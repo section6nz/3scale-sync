@@ -5,6 +5,7 @@ import logging
 import os.path
 import sys
 from typing import List
+from urllib.parse import urljoin
 
 import yaml
 from threescale_api import ThreeScaleClient
@@ -67,12 +68,19 @@ def sync(c: ThreeScaleClient, config: Config, open_api_basedir='.'):
                 raise ValueError("Invalid file extension for OpenAPI spec, requires YAML or JSON. file={}".format(
                     product_config.openAPIPath))
 
+        openapi_version: str = openapi['swagger'] if 'swagger' in openapi else openapi['openapi']
+        api_base_path = '/'
+        if openapi_version.startswith('2.') and 'basePath' in openapi:
+            api_base_path = openapi['basePath']
+        # TODO: OpenAPI 3.0 specifies basePath in the server object.
+
         proxy_mappings = []
         for path in openapi['paths']:
             definition = openapi['paths'][path]
             for method in [m for m in definition if m in valid_methods]:
-                logger.info("Found mapping in spec: {} {}".format(method, path))
-                proxy_mappings.append(ProxyMapping(http_method=method.upper(), pattern=path + '$', delta=1))
+                logger.info("Found mapping in spec: {} {}".format(method, urljoin(api_base_path, path[1:])))
+                proxy_mappings.append(
+                    ProxyMapping(http_method=method.upper(), pattern=urljoin(api_base_path, path[1:]) + '$', delta=1))
 
         # Create product
         product = Product(name=product_name, description=description, system_name=product_system_name)
