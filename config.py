@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 
 
 class APIConfig:
@@ -34,7 +34,7 @@ class MappingConfig:
 
 
 class ProductConfig:
-    def __init__(self, name: str, shortName: str, description: str, openAPIPath: str, version: int, api: APIConfig,
+    def __init__(self, name: str, shortName: str, description: str, openAPIPath: Union[str, List[str]], version: int, api: APIConfig,
                  backends: List[BackendConfig], applications: List[ApplicationConfig], stagingPublicURL=None,
                  productionPublicURL=None):
         self.name = name
