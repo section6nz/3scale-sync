@@ -3,4 +3,5 @@
 *.iml
 __pycache__
 openapi.yml
+openapi.json
 config-*.yml

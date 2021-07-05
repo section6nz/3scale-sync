@@ -75,6 +75,8 @@ def sync(c: ThreeScaleClient, config: Config, open_api_basedir='.'):
             if openapi_version.startswith('2.') and 'basePath' in openapi:
                 api_base_path = openapi['basePath']
             # TODO: OpenAPI 3.0 specifies basePath in the server object.
+            if not api_base_path.endswith('/'):
+                api_base_path += '/'
 
             for path in openapi['paths']:
                 definition = openapi['paths'][path]
