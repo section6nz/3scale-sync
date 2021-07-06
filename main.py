@@ -142,7 +142,8 @@ def sync_applications(c: ThreeScaleClient, description: str, environment: str, p
                              authentication_type=AuthenticationType.from_string(product_config.api.authType),
                              sandbox_endpoint=product_config.stagingPublicURL,
                              endpoint=product_config.productionPublicURL)
-        sync_oidc_flows(c, product, product_config)
+        if product_config.api.oidcFlows:
+            sync_oidc_flows(c, product, product_config)
         sync_backends(c, backend_name, description, product, product_config)
 
 
