@@ -34,7 +34,8 @@ class MappingConfig:
 
 
 class ProductConfig:
-    def __init__(self, name: str, shortName: str, description: str, openAPIPath: Union[str, List[str]], version: int, api: APIConfig,
+    def __init__(self, name: str, shortName: str, description: str, openAPIPath: Union[str, List[str]], version: int,
+                 api: APIConfig,
                  backends: List[BackendConfig], applications: List[ApplicationConfig], stagingPublicURL=None,
                  productionPublicURL=None):
         self.name = name
@@ -70,8 +71,10 @@ def parse_config(c: dict) -> Config:
                 'productionPublicURL'] if 'productionPublicURL' in product else staging_public_url,
             api=APIConfig(publicBasePath=product['api']['publicBasePath'],
                           authType=product['api']['authentication']['authType'],
-                          issuerURL=product['api']['authentication']['issuerURL'],
-                          issuerType=product['api']['authentication']['issuerType'],
+                          issuerURL=product['api']['authentication']['issuerURL'] if 'issuerURL' in product['api'][
+                              'authentication'] else None,
+                          issuerType=product['api']['authentication']['issuerType'] if 'issuerType' in product['api'][
+                              'authentication'] else None,
                           credentialsLocation=product['api']['authentication']['credentialsLocation'],
                           oidcFlows=product['api']['authentication']['oidcFlows']
                           if 'oidcFlows' in product['api']['authentication'] else None),
