@@ -11,6 +11,7 @@ import yaml
 from threescale_api import ThreeScaleClient
 
 from config import Config, parse_config, ProductConfig, ApplicationConfig
+from resources.account import Account
 from resources.application import Application, ApplicationPlan, ApplicationOIDCConfiguration
 from resources.backend import Backend
 from resources.metric import Metric
@@ -118,6 +119,12 @@ def sync_applications(c: ThreeScaleClient, description: str, environment: str, p
         if application.service_id == product.id and application.name not in active_applications:
             application.delete(client)
     for application_config in product_config.applications:
+        # Create the application user if it does not exist. User account synchronization is append-only.
+        account = Account().fetch(client, application_config.account)
+        if not account:
+            logger.info("Creating new account: {}".format(application_config.account))
+            account = Account(username=application_config.account).create(client)
+
         user_id = fetch_user_id(c, application_config)
 
         # Generate names
