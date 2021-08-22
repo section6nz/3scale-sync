@@ -55,6 +55,34 @@ class Config:
         self.environment = environment
         self.products = products
 
+    def validate(self):
+        err_reason = "This will lead to system name conflicts. Please resolve this before continuing."
+        # Ensure product system names are unique.
+        system_names = [p.shortName for p in self.products]
+        if len(system_names) != len(set(system_names)):
+            raise AssertionError("ABORT: Product short names are not unique. " + err_reason)
+
+        backend_names = []
+        application_names = []
+        for product in self.products:
+            backend_names.extend([b.id for b in product.backends])
+            application_names.extend([a.name for a in product.applications])
+
+        # Ensure backend names are unique.
+        if len(backend_names) != len(set(backend_names)):
+            raise AssertionError("ABORT: Backend ids are not unique. " + err_reason)
+
+        # Ensure application names are unique.
+        if len(application_names) != len(set(application_names)):
+            raise AssertionError("ABORT: Application names are not unique. " + err_reason)
+
+        # Ensure backend paths are not duplicated.
+        for product in self.products:
+            paths = [b.path for b in product.backends]
+            if len(paths) != len(set(paths)):
+                raise AssertionError("ABORT: Backend paths are not unique. "
+                                     "Please resolve before continuing. product={}".format(product.name))
+
 
 def parse_config(c: dict) -> Config:
     products = []

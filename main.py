@@ -232,6 +232,7 @@ if __name__ == '__main__':
             raise ValueError('Invalid config!')
 
     config = parse_config(loaded_config)
+    config.validate()
 
     if args.delete:
         response = input("WARNING --- Deleting all products in the configuration. Are you sure? y/N: ")
