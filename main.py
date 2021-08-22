@@ -21,7 +21,7 @@ from resources.product import Product
 from resources.proxy import Proxy, AuthenticationType, ProxyMapping
 
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 handler = logging.StreamHandler(sys.stdout)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -151,7 +151,7 @@ def sync_applications(c: ThreeScaleClient, description: str, environment: str, p
             logger.info("Creating new account: {}".format(application_config.account))
             Account(username=application_config.account).create(client)
 
-        user_id = fetch_user_id(c, application_config)
+        user_id = fetch_user_id(c, application_config, accounts=accounts)
 
         # Generate names
         application_name = application_config.name \
@@ -179,9 +179,10 @@ def sync_applications(c: ThreeScaleClient, description: str, environment: str, p
         sync_backends(c, environment, product_system_name, description, product, product_config)
 
 
-def fetch_user_id(c: ThreeScaleClient, application_config: ApplicationConfig):
+def fetch_user_id(c: ThreeScaleClient, application_config: ApplicationConfig, accounts=None):
+    accounts_list = Account().list(c) if accounts is None else accounts
     # Verify user exists.
-    users = [u.entity_id for u in c.accounts.list() if u.entity_name == application_config.account]
+    users = [u.id for u in accounts_list if u.username == application_config.account]
     if not users:
         raise ValueError('User {} not found.'.format(application_config.account))
     user_id = users[0]
