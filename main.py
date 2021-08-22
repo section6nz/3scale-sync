@@ -131,7 +131,6 @@ def sync_applications(c: ThreeScaleClient, description: str, environment: str, p
         application_name = application_config.name \
             if application_config.name else f"{environment}_{product_system_name}_v{version}_Application"
         application_plan_name = f"{environment}_{product_system_name}_v{version}_AppPlan"
-        backend_name = f"{environment}_{product_system_name}_backend"
         # Create application plans
         application_plan = ApplicationPlan(name=application_plan_name)
         application_plan = application_plan.create(c, service_id=product.id)
@@ -151,7 +150,7 @@ def sync_applications(c: ThreeScaleClient, description: str, environment: str, p
                              endpoint=product_config.productionPublicURL)
         if product_config.api.oidcFlows:
             sync_oidc_flows(c, product, product_config)
-        sync_backends(c, backend_name, description, product, product_config)
+        sync_backends(c, environment, product_system_name, description, product, product_config)
 
 
 def fetch_user_id(c: ThreeScaleClient, application_config: ApplicationConfig):
@@ -163,10 +162,11 @@ def fetch_user_id(c: ThreeScaleClient, application_config: ApplicationConfig):
     return user_id
 
 
-def sync_backends(c: ThreeScaleClient, backend_name: str, description: str, product: Product,
+def sync_backends(c: ThreeScaleClient, environment: str, product_system_name: str, description: str, product: Product,
                   product_config: ProductConfig):
     # Create backend
     for backend_config in product_config.backends:
+        backend_name = f"{environment}_{product_system_name}_{backend_config.id}"
         backend = Backend(name=backend_name, description=description,
                           private_endpoint=backend_config.privateBaseURL)
         backend = backend.create(c)
