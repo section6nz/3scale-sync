@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 import argparse
+
 import json
 import logging
 import os.path
 import sys
+import time
 from typing import List
 from urllib.parse import urljoin
 
@@ -56,6 +58,8 @@ def sync(c: ThreeScaleClient, config: Config, open_api_basedir='.'):
     valid_methods = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace']
     accounts = Account().list(c)
     for product_config in config.products:
+        # Performance timers
+        product_sync_start_time_ms = round(time.time() * 1000)
         product_name = product_config.name
         description = product_config.description
         version = product_config.version
@@ -110,6 +114,9 @@ def sync(c: ThreeScaleClient, config: Config, open_api_basedir='.'):
         # Promote application
         proxy = Proxy(service_id=product.id).fetch(c)
         proxy.promote(c)
+        product_sync_end_time_ms = round(time.time() * 1000)
+        logger.info("Syncing product took {}s. product={}"
+                    .format((product_sync_end_time_ms - product_sync_start_time_ms)/1000, product.name))
 
 
 def parse_openapi_file(basedir: str, filepath: str):
