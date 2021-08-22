@@ -22,7 +22,6 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
@@ -89,6 +88,16 @@ def sync(c: ThreeScaleClient, config: Config, open_api_basedir='.'):
 
         # Create product
         product = Product(name=product_name, description=description, system_name=product_system_name)
+        existing_product = product.fetch(c, product_system_name)
+        # Update product name and description if it has changed.
+        if existing_product:
+            has_product_metadata_changed = product.name != existing_product.name \
+                                           or product.description != existing_product.description
+            if has_product_metadata_changed:
+                logger.info("Updating product name and description. Was name={}, desc={}, now name={}, desc={}"
+                            .format(existing_product.name, existing_product.description,
+                                    product.name, product.description))
+                existing_product.update(c, dict(name=product.name, description=product.description))
 
         product = product.create(c)
         sync_applications(c, description, environment, product, product_config, product_system_name, version,

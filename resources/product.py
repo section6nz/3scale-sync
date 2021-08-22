@@ -66,7 +66,13 @@ class Product(Resource):
         return None
 
     def update(self, client: ThreeScaleClient, params: dict):
-        client.services.update(self.id, params)
+        api_url = f"{client.admin_api_url}/services/{self.id}.json"
+        response = requests.put(api_url, params={'access_token': client.token}, data=params)
+        self.logger.debug(response.text)
+        if not response.ok:
+            raise ValueError(
+                'Error updating product {}, code={}, error={}'
+                    .format(self.name, response.status_code, response.text))
         return self.fetch(client, self.system_name)
 
     def create(self, client: ThreeScaleClient, ignore_if_exists=True, deployment_option='self_managed') -> Product:
