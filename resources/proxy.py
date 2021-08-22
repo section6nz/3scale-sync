@@ -228,8 +228,23 @@ class ProxyMapping:
                 return mapping
         return None
 
-    def create(self, client: ThreeScaleClient, service_id: int) -> ProxyMapping:
-        existing_mapping = self.fetch_existing(client, service_id, http_method=self.http_method, pattern=self.pattern)
+    def create(self, client: ThreeScaleClient, service_id: int,
+               existing_mappings: List[ProxyMapping] = None) -> ProxyMapping:
+
+        # Previously retrieved existing_mappings can be passed in to prevent re-fetching.
+        if existing_mappings is None:
+            existing_mapping = self.fetch_existing(client, service_id, http_method=self.http_method,
+                                                   pattern=self.pattern)
+        else:
+            self.logger.debug("Using cached mapping list.")
+            has_existing_mapping = len([m for m in existing_mappings
+                                        if m.http_method == self.http_method and m.pattern == self.pattern]) > 0
+            if has_existing_mapping:
+                existing_mapping = self.fetch_existing(client, service_id, http_method=self.http_method,
+                                                       pattern=self.pattern)
+            else:
+                existing_mapping = None
+
         if existing_mapping:
             self.logger.info(
                 "Not creating existing mapping: {} {}".format(existing_mapping.http_method, existing_mapping.pattern))

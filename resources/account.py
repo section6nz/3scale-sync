@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Union
+from typing import Union, List
 
 from threescale_api import ThreeScaleClient
 
@@ -34,12 +34,17 @@ class Account(Resource):
         self.org_name = org_name
         self.links = links
 
-    def fetch(self, client: ThreeScaleClient, system_name: str) -> Union[Account, None]:
+    def list(self, client: ThreeScaleClient) -> List[Account]:
         accounts = client.accounts.list()
+        self.logger.debug('Found {} accounts.'.format(len(accounts)))
+        return [Account(**dict(username=a.entity_name, **a.entity)) for a in accounts]
+
+    def fetch(self, client: ThreeScaleClient, system_name: str) -> Union[Account, None]:
+        accounts = self.list(client)
         for account in accounts:
-            self.logger.debug(account.entity)
-            if account.entity['org_name'] == system_name:
-                return Account(**dict(username=account.entity_name, **account.entity))
+            self.logger.debug(account.username, account.id)
+            if account.org_name == system_name:
+                return account
         return None
 
     def create(self, client: ThreeScaleClient) -> Union[Account, None]:

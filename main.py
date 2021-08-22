@@ -13,13 +13,13 @@ from threescale_api import ThreeScaleClient
 from config import Config, parse_config, ProductConfig, ApplicationConfig
 from resources.account import Account
 from resources.application import Application, ApplicationPlan, ApplicationOIDCConfiguration
-from resources.backend import Backend
+from resources.backend import Backend, BackendUsage
 from resources.metric import Metric
 from resources.product import Product
 from resources.proxy import Proxy, AuthenticationType, ProxyMapping
 
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 handler = logging.StreamHandler(sys.stdout)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -39,11 +39,14 @@ def sync_mappings(client: ThreeScaleClient, product: Product, product_config: Pr
         if not should_be_active:
             mapping.delete(client, product.id)
 
+    existing_mappings = ProxyMapping.list(client, product.id)
     hits_metric = Metric.fetch_hits_metric(client, product.id)
     for mappingConfig in proxy_mappings:
         mappingConfig.metric_id = hits_metric.id  # set metric id on mapping (required)
         mappingConfig.pattern = product_config.api.publicBasePath + mappingConfig.pattern
-        mapping = mappingConfig.create(client, product.id)
+        mappingConfig.create(client, product.id, existing_mappings=existing_mappings)
+    # Fetch the final list of mappings from the server. Used for logging
+    ProxyMapping.list(client, product.id)
 
 
 def sync(c: ThreeScaleClient, config: Config, open_api_basedir='.'):
@@ -51,6 +54,7 @@ def sync(c: ThreeScaleClient, config: Config, open_api_basedir='.'):
     # Product variables
     environment = config.environment
     valid_methods = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace']
+    accounts = Account().list(c)
     for product_config in config.products:
         product_name = product_config.name
         description = product_config.description
@@ -101,7 +105,7 @@ def sync(c: ThreeScaleClient, config: Config, open_api_basedir='.'):
 
         product = product.create(c)
         sync_applications(c, description, environment, product, product_config, product_system_name, version,
-                          proxy_mappings)
+                          accounts=accounts)
         sync_mappings(client, product, product_config, proxy_mappings)
         # Promote application
         proxy = Proxy(service_id=product.id).fetch(c)
@@ -121,7 +125,7 @@ def parse_openapi_file(basedir: str, filepath: str):
 
 def sync_applications(c: ThreeScaleClient, description: str, environment: str, product: Product,
                       product_config: ProductConfig, product_system_name: str, version: int,
-                      proxy_mappings: List[ProxyMapping]):
+                      accounts: List[Account] = None):
     # Delete extra applications
     active_applications = [a.name for a in product_config.applications]
     for application in Application.list(client):
@@ -129,10 +133,16 @@ def sync_applications(c: ThreeScaleClient, description: str, environment: str, p
             application.delete(client)
     for application_config in product_config.applications:
         # Create the application user if it does not exist. User account synchronization is append-only.
-        account = Account().fetch(client, application_config.account)
+        # Previously retrieved accounts can be passed in to prevent re-fetch.
+        if accounts is None:
+            account = Account().fetch(client, application_config.account)
+        else:
+            account_list = [a for a in accounts if a.username == application_config.account]
+            account = account_list[0] if len(account_list) == 1 else None
+
         if not account:
             logger.info("Creating new account: {}".format(application_config.account))
-            account = Account(username=application_config.account).create(client)
+            Account(username=application_config.account).create(client)
 
         user_id = fetch_user_id(c, application_config)
 
@@ -173,6 +183,7 @@ def fetch_user_id(c: ThreeScaleClient, application_config: ApplicationConfig):
 
 def sync_backends(c: ThreeScaleClient, environment: str, product_system_name: str, description: str, product: Product,
                   product_config: ProductConfig):
+    backend_usages = BackendUsage(service_id=product.id).list(client)
     # Create backend
     for backend_config in product_config.backends:
         backend_name = f"{environment}_{product_system_name}_{backend_config.id}"
@@ -180,7 +191,7 @@ def sync_backends(c: ThreeScaleClient, environment: str, product_system_name: st
                           private_endpoint=backend_config.privateBaseURL)
         backend = backend.create(c)
         # Update backend usages
-        product.update_backends(c, backend_id=backend.id, path=backend_config.path)
+        product.update_backends(c, backend_id=backend.id, path=backend_config.path, backend_usages=backend_usages)
         # backend.delete(c)
 
 

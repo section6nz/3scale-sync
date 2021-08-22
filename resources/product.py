@@ -115,12 +115,13 @@ class Product(Resource):
         # Delete service.
         client.services.delete(entity_id=self.id)
 
-    def update_backends(self, client: ThreeScaleClient, backend_id: int, path: str):
+    def update_backends(self, client: ThreeScaleClient, backend_id: int, path: str, backend_usages=None):
         api_url = f"{client.admin_api_url}/services/{self.id}/backend_usages.json"
         backend = Backend.fetch_by_id(client, backend_id)
         if backend is None:
             raise ValueError('Backend not found: id={}'.format(backend_id))
-        usages = BackendUsage(service_id=self.id).list(client)
+        # Previously retrieved backend usages can be passed in to prevent re-fetch.
+        usages = backend_usages if backend_usages is not None else BackendUsage(service_id=self.id).list(client)
         backend_args = dict(
             service_id=self.id,
             backend_api_id=backend_id,

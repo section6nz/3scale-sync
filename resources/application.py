@@ -258,7 +258,8 @@ class ApplicationPlan:
         if not response.ok:
             raise ValueError(
                 'Could not create application plan: code={}, error={}'.format(response.status_code, response.text))
-        return self.fetch(client, service_id, self.system_name)
+        application_plan_json = response.json()['application_plan']
+        return ApplicationPlan(**application_plan_json)
 
     def delete(self, client: ThreeScaleClient, service_id: int):
         api_url = f"{client.admin_api_url}/services/{service_id}/application_plans/{self.id}"
