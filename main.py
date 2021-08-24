@@ -194,7 +194,7 @@ def sync_backends(c: ThreeScaleClient, environment: str, product_system_name: st
     backend_usages = BackendUsage(service_id=product.id).list(client)
     # Create backend
     for backend_config in product_config.backends:
-        backend_name = f"{environment}_{backend_config.id}"
+        backend_name = f"{environment}_{backend_config.id}_backend"
         backend = Backend(name=backend_name, description=description,
                           private_endpoint=backend_config.privateBaseURL)
         backend = backend.create(c)
