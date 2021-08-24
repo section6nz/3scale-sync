@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 import argparse
-
 import json
 import logging
 import os.path
 import sys
 import time
+from multiprocessing import Pool
 from typing import List
 from urllib.parse import urljoin
 
@@ -51,72 +51,77 @@ def sync_mappings(client: ThreeScaleClient, product: Product, product_config: Pr
     ProxyMapping.list(client, product.id)
 
 
-def sync(c: ThreeScaleClient, config: Config, open_api_basedir='.'):
+def sync(c: ThreeScaleClient, config: Config, open_api_basedir='.', parallel: int = 1):
     # TODO: Create user if not exists
     # Product variables
+    accounts = Account().list(c)
+    if parallel > 1:
+        arg_list = [(accounts, c, open_api_basedir, product_config) for product_config in config.products]
+        with Pool(4) as process_pool:
+            process_pool.starmap(sync_product, arg_list)
+    else:
+        for product_config in config.products:
+            sync_product(accounts, c, open_api_basedir, product_config)
+
+
+def sync_product(accounts, c, open_api_basedir, product_config):
     environment = config.environment
     valid_methods = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace']
-    accounts = Account().list(c)
-    for product_config in config.products:
-        # Performance timers
-        product_sync_start_time_ms = round(time.time() * 1000)
-        product_name = product_config.name
-        description = product_config.description
-        version = product_config.version
-        product_system_name = product_config.shortName.replace('-', '_').replace(' ', '_')
-
-        # Parse OpenAPI spec for product.
-        logger.info("Loading mapping paths from OpenAPI config.")
-        openapi_specs = []
-        if type(product_config.openAPIPath) is str:
-            openapi = parse_openapi_file(open_api_basedir, product_config.openAPIPath)
+    # Performance timers
+    product_sync_start_time_ms = round(time.time() * 1000)
+    product_name = product_config.name
+    description = product_config.description
+    version = product_config.version
+    product_system_name = product_config.shortName.replace('-', '_').replace(' ', '_')
+    # Parse OpenAPI spec for product.
+    logger.info("Loading mapping paths from OpenAPI config.")
+    openapi_specs = []
+    if type(product_config.openAPIPath) is str:
+        openapi = parse_openapi_file(open_api_basedir, product_config.openAPIPath)
+        openapi_specs.append(openapi)
+    else:
+        for oas_file in product_config.openAPIPath:
+            openapi = parse_openapi_file(open_api_basedir, oas_file)
             openapi_specs.append(openapi)
-        else:
-            for oas_file in product_config.openAPIPath:
-                openapi = parse_openapi_file(open_api_basedir, oas_file)
-                openapi_specs.append(openapi)
+    proxy_mappings = []
+    for openapi in openapi_specs:
+        openapi_version: str = openapi['swagger'] if 'swagger' in openapi else openapi['openapi']
+        api_base_path = '/'
+        if openapi_version.startswith('2.') and 'basePath' in openapi:
+            api_base_path = openapi['basePath']
+        # TODO: OpenAPI 3.0 specifies basePath in the server object.
+        if not api_base_path.endswith('/'):
+            api_base_path += '/'
 
-        proxy_mappings = []
-        for openapi in openapi_specs:
-            openapi_version: str = openapi['swagger'] if 'swagger' in openapi else openapi['openapi']
-            api_base_path = '/'
-            if openapi_version.startswith('2.') and 'basePath' in openapi:
-                api_base_path = openapi['basePath']
-            # TODO: OpenAPI 3.0 specifies basePath in the server object.
-            if not api_base_path.endswith('/'):
-                api_base_path += '/'
-
-            for path in openapi['paths']:
-                definition = openapi['paths'][path]
-                for method in [m for m in definition if m in valid_methods]:
-                    logger.info("Found mapping in spec: {} {}".format(method, urljoin(api_base_path, path[1:])))
-                    proxy_mappings.append(
-                        ProxyMapping(http_method=method.upper(), pattern=urljoin(api_base_path, path[1:]) + '$',
-                                     delta=1))
-
-        # Create product
-        product = Product(name=product_name, description=description, system_name=product_system_name)
-        existing_product = product.fetch(c, product_system_name)
-        # Update product name and description if it has changed.
-        if existing_product:
-            has_product_metadata_changed = product.name != existing_product.name \
-                                           or product.description != existing_product.description
-            if has_product_metadata_changed:
-                logger.info("Updating product name and description. Was name={}, desc={}, now name={}, desc={}"
-                            .format(existing_product.name, existing_product.description,
-                                    product.name, product.description))
-                existing_product.update(c, dict(name=product.name, description=product.description))
-
-        product = product.create(c)
-        sync_applications(c, description, environment, product, product_config, product_system_name, version,
-                          accounts=accounts)
-        sync_mappings(client, product, product_config, proxy_mappings)
-        # Promote application
-        proxy = Proxy(service_id=product.id).fetch(c)
-        proxy.promote(c)
-        product_sync_end_time_ms = round(time.time() * 1000)
-        logger.info("Syncing product took {}s. product={}"
-                    .format((product_sync_end_time_ms - product_sync_start_time_ms)/1000, product.name))
+        for path in openapi['paths']:
+            definition = openapi['paths'][path]
+            for method in [m for m in definition if m in valid_methods]:
+                logger.info("Found mapping in spec: {} {}".format(method, urljoin(api_base_path, path[1:])))
+                proxy_mappings.append(
+                    ProxyMapping(http_method=method.upper(), pattern=urljoin(api_base_path, path[1:]) + '$',
+                                 delta=1))
+    # Create product
+    product = Product(name=product_name, description=description, system_name=product_system_name)
+    existing_product = product.fetch(c, product_system_name)
+    # Update product name and description if it has changed.
+    if existing_product:
+        has_product_metadata_changed = product.name != existing_product.name \
+                                       or product.description != existing_product.description
+        if has_product_metadata_changed:
+            logger.info("Updating product name and description. Was name={}, desc={}, now name={}, desc={}"
+                        .format(existing_product.name, existing_product.description,
+                                product.name, product.description))
+            existing_product.update(c, dict(name=product.name, description=product.description))
+    product = product.create(c)
+    sync_applications(c, description, environment, product, product_config, product_system_name, version,
+                      accounts=accounts)
+    sync_mappings(client, product, product_config, proxy_mappings)
+    # Promote application
+    proxy = Proxy(service_id=product.id).fetch(c)
+    proxy.promote(c)
+    product_sync_end_time_ms = round(time.time() * 1000)
+    logger.info("Syncing product took {}s. product={}"
+                .format((product_sync_end_time_ms - product_sync_start_time_ms) / 1000, product.name))
 
 
 def parse_openapi_file(basedir: str, filepath: str):
@@ -223,6 +228,8 @@ if __name__ == '__main__':
                         help='Directory root of OpenAPI specification files.')
     parser.add_argument('--delete', dest='delete', required=False, default=False, help='Delete all products.',
                         action='store_true')
+    parser.add_argument('--parallel', dest='parallel', required=False, default=1, type=int,
+                        help='Parallel execution threads for product sync')
     args = parser.parse_args()
     client = ThreeScaleClient(url=args.url, token=args.token, ssl_verify=True)
 
@@ -238,12 +245,16 @@ if __name__ == '__main__':
         response = input("WARNING --- Deleting all products in the configuration. Are you sure? y/N: ")
         if response.upper() == 'Y':
             logger.warning("Deleting {} products: {}".format(len(config.products), [p.name for p in config.products]))
-            for p in config.products:
-                system_name = p.shortName.replace('-', '_').replace(' ', '_')
-                product = Product().fetch(client, system_name)
-                if not product:
-                    logger.error('Could not find product: {}, system_name={}'.format(p.name, system_name))
+            for config_product in config.products:
+                system_name = config_product.shortName.replace('-', '_').replace(' ', '_')
+                p = Product().fetch(client, system_name)
+                if not p:
+                    logger.error('Could not find product: {}, system_name={}'.format(config_product.name, system_name))
                     exit(1)
-                product.delete(client)
+                p.delete(client)
     else:
-        sync(client, config, open_api_basedir=args.openapi_basedir)
+        total_product_sync_start_time_ms = round(time.time() * 1000)
+        sync(client, config, open_api_basedir=args.openapi_basedir, parallel=args.parallel)
+        total_product_sync_end_time_ms = round(time.time() * 1000)
+        logger.info("Syncing configuration took {}s."
+                    .format((total_product_sync_end_time_ms - total_product_sync_start_time_ms) / 1000))
