@@ -1,4 +1,5 @@
 import json
+import logging
 import os.path
 import time
 from multiprocessing import Pool
@@ -9,13 +10,14 @@ import yaml
 from threescale_api import ThreeScaleClient
 
 from config import ProductConfig, Config, ApplicationConfig
-from main import config, logger, client
 from resources.account import Account
 from resources.application import Application, ApplicationPlan, ApplicationOIDCConfiguration
 from resources.backend import BackendUsage, Backend
 from resources.metric import Metric
 from resources.product import Product
 from resources.proxy import ProxyMapping, Proxy, AuthenticationType
+
+logger = logging.getLogger('sync')
 
 
 def sync_mappings(client: ThreeScaleClient, product: Product, product_config: ProductConfig,
@@ -50,10 +52,10 @@ def sync_config(c: ThreeScaleClient, config: Config, open_api_basedir='.', paral
             process_pool.starmap(sync_product, arg_list)
     else:
         for product_config in config.products:
-            sync_product(accounts, c, open_api_basedir, product_config)
+            sync_product(config, accounts, c, open_api_basedir, product_config)
 
 
-def sync_product(accounts, c, open_api_basedir, product_config):
+def sync_product(config, accounts, client, open_api_basedir, product_config):
     environment = config.environment
     valid_methods = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace']
     # Performance timers
@@ -91,7 +93,7 @@ def sync_product(accounts, c, open_api_basedir, product_config):
                                  delta=1))
     # Create product
     product = Product(name=product_name, description=description, system_name=product_system_name)
-    existing_product = product.fetch(c, product_system_name)
+    existing_product = product.fetch(client, product_system_name)
     # Update product name and description if it has changed.
     if existing_product:
         has_product_metadata_changed = product.name != existing_product.name \
@@ -100,14 +102,14 @@ def sync_product(accounts, c, open_api_basedir, product_config):
             logger.info("Updating product name and description. Was name={}, desc={}, now name={}, desc={}"
                         .format(existing_product.name, existing_product.description,
                                 product.name, product.description))
-            existing_product.update(c, dict(name=product.name, description=product.description))
-    product = product.create(c)
-    sync_applications(c, description, environment, product, product_config, product_system_name, version,
+            existing_product.update(client, dict(name=product.name, description=product.description))
+    product = product.create(client)
+    sync_applications(client, description, environment, product, product_config, product_system_name, version,
                       accounts=accounts)
     sync_mappings(client, product, product_config, proxy_mappings)
     # Promote application
-    proxy = Proxy(service_id=product.id).fetch(c)
-    proxy.promote(c)
+    proxy = Proxy(service_id=product.id).fetch(client)
+    proxy.promote(client)
     product_sync_end_time_ms = round(time.time() * 1000)
     logger.info("Syncing product took {}s. product={}"
                 .format((product_sync_end_time_ms - product_sync_start_time_ms) / 1000, product.name))
@@ -129,21 +131,21 @@ def sync_applications(c: ThreeScaleClient, description: str, environment: str, p
                       accounts: List[Account] = None):
     # Delete extra applications
     active_applications = [a.name for a in product_config.applications]
-    for application in Application.list(client):
+    for application in Application.list(c):
         if application.service_id == product.id and application.name not in active_applications:
-            application.delete(client)
+            application.delete(c)
     for application_config in product_config.applications:
         # Create the application user if it does not exist. User account synchronization is append-only.
         # Previously retrieved accounts can be passed in to prevent re-fetch.
         if accounts is None:
-            account = Account().fetch(client, application_config.account)
+            account = Account().fetch(c, application_config.account)
         else:
             account_list = [a for a in accounts if a.username == application_config.account]
             account = account_list[0] if len(account_list) == 1 else None
 
         if not account:
             logger.info("Creating new account: {}".format(application_config.account))
-            Account(username=application_config.account).create(client)
+            Account(username=application_config.account).create(c)
 
         user_id = fetch_user_id(c, application_config, accounts=accounts)
 
@@ -170,7 +172,7 @@ def sync_applications(c: ThreeScaleClient, description: str, environment: str, p
                              endpoint=product_config.productionPublicURL)
         if product_config.api.oidcFlows:
             sync_oidc_flows(c, product, product_config)
-        sync_backends(c, environment, product_system_name, description, product, product_config)
+        sync_backends(c, environment, description, product, product_config)
 
 
 def fetch_user_id(c: ThreeScaleClient, application_config: ApplicationConfig, accounts=None):
@@ -183,9 +185,9 @@ def fetch_user_id(c: ThreeScaleClient, application_config: ApplicationConfig, ac
     return user_id
 
 
-def sync_backends(c: ThreeScaleClient, environment: str, product_system_name: str, description: str, product: Product,
+def sync_backends(c: ThreeScaleClient, environment: str, description: str, product: Product,
                   product_config: ProductConfig):
-    backend_usages = BackendUsage(service_id=product.id).list(client)
+    backend_usages = BackendUsage(service_id=product.id).list(c)
     # Create backend
     for backend_config in product_config.backends:
         backend_name = f"{environment}_{backend_config.id}_backend"
