@@ -193,7 +193,11 @@ def sync_backends(c: ThreeScaleClient, environment: str, description: str, produ
         backend_name = f"{environment}_{backend_config.id}_backend"
         backend = Backend(name=backend_name, description=description,
                           private_endpoint=backend_config.privateBaseURL)
-        backend = backend.create(c)
+        try:
+            backend = backend.create(c, ignore_if_exists=False)
+        except ValueError:
+            logger.info("Backend {} exists, updating.".format(backend_name))
+            backend = backend.update(c)
         # Update backend usages
         product.update_backends(c, backend_id=backend.id, path=backend_config.path, backend_usages=backend_usages)
         # backend.delete(c)

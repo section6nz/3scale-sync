@@ -65,8 +65,16 @@ class Backend(Resource):
             private_endpoint=self.private_endpoint
         ))
 
-        new_backend = Backend(**result.entity)
-        return new_backend
+        return Backend(**result.entity)
+
+    def update(self, client: ThreeScaleClient) -> Backend:
+        result = client.backends.update(**dict(
+            name=self.name,
+            description=self.description,
+            private_endpoint=self.private_endpoint
+        ))
+
+        return Backend(**result.entity)
 
     def delete(self, client: ThreeScaleClient):
         if self.id is None:
