@@ -106,8 +106,19 @@ def sync_product(config, accounts, client, open_api_basedir, product_config):
     product = product.create(client)
     sync_applications(client, description, environment, product, product_config, product_system_name, version,
                       accounts=accounts)
+    # Configure authentication
+    proxy = Proxy(service_id=product.id).fetch(client)
+    _ = proxy.update(client, oidc_issuer_endpoint=product_config.api.issuerURL,
+                     oidc_issuer_type=product_config.api.issuerType,
+                     credentials_location=product_config.api.credentialsLocation,
+                     authentication_type=AuthenticationType.from_string(product_config.api.authType),
+                     sandbox_endpoint=product_config.stagingPublicURL,
+                     endpoint=product_config.productionPublicURL)
+    if product_config.api.oidcFlows:
+        sync_oidc_flows(client, product, product_config)
+    sync_backends(client, environment, description, product, product_config)
     sync_mappings(client, product, product_config, proxy_mappings)
-    # Promote application
+    # Promote configuration
     proxy = Proxy(service_id=product.id).fetch(client)
     proxy.promote(client)
     product_sync_end_time_ms = round(time.time() * 1000)
@@ -161,18 +172,7 @@ def sync_applications(c: ThreeScaleClient, description: str, environment: str, p
         application = Application(name=application_name, client_id=application_config.client_id,
                                   client_secret=application_config.client_secret,
                                   description=description, account_id=user_id, plan_id=application_plan.id)
-        application = application.create(c, delete_if_exists=True)
-        # Configure authentication
-        proxy = Proxy(service_id=product.id).fetch(c)
-        proxy = proxy.update(c, oidc_issuer_endpoint=product_config.api.issuerURL,
-                             oidc_issuer_type=product_config.api.issuerType,
-                             credentials_location=product_config.api.credentialsLocation,
-                             authentication_type=AuthenticationType.from_string(product_config.api.authType),
-                             sandbox_endpoint=product_config.stagingPublicURL,
-                             endpoint=product_config.productionPublicURL)
-        if product_config.api.oidcFlows:
-            sync_oidc_flows(c, product, product_config)
-        sync_backends(c, environment, description, product, product_config)
+        _ = application.create(c, delete_if_exists=True)
 
 
 def fetch_user_id(c: ThreeScaleClient, application_config: ApplicationConfig, accounts=None):
