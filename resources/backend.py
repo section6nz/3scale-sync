@@ -67,14 +67,15 @@ class Backend(Resource):
 
         return Backend(**result.entity)
 
-    def update(self, client: ThreeScaleClient) -> Backend:
-        result = client.backends.update(**dict(
-            name=self.name,
-            description=self.description,
-            private_endpoint=self.private_endpoint
-        ))
+    def update(self, client: ThreeScaleClient, **kwargs) -> Backend:
+        api_url = f"{client.admin_api_url}/backend_apis/{self.id}.json"
+        response = requests.put(api_url, params={'access_token': client.token}, data=kwargs)
+        self.logger.debug(response.text)
+        if not response.ok:
+            raise ValueError(
+                'Error updating backend: code={}, error={}'.format(response.status_code, response.text))
 
-        return Backend(**result.entity)
+        return Backend(**response.json()['backend_api'])
 
     def delete(self, client: ThreeScaleClient):
         if self.id is None:
