@@ -47,7 +47,7 @@ def sync_config(c: ThreeScaleClient, config: Config, open_api_basedir='.', paral
     # Product variables
     accounts = Account().list(c)
     if parallel > 1:
-        arg_list = [(accounts, c, open_api_basedir, product_config) for product_config in config.products]
+        arg_list = [(config, accounts, c, open_api_basedir, product_config) for product_config in config.products]
         with Pool(4) as process_pool:
             process_pool.starmap(sync_product, arg_list)
     else:
