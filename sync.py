@@ -40,7 +40,7 @@ def sync_mappings(client: ThreeScaleClient, product: Product, product_config: Pr
     ProxyMapping.list(client, product.id)
 
 
-def sync(c: ThreeScaleClient, config: Config, open_api_basedir='.', parallel: int = 1):
+def sync_config(c: ThreeScaleClient, config: Config, open_api_basedir='.', parallel: int = 1):
     # TODO: Create user if not exists
     # Product variables
     accounts = Account().list(c)

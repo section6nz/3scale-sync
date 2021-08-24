@@ -9,7 +9,7 @@ from threescale_api import ThreeScaleClient
 
 from config import parse_config
 from resources.product import Product
-from sync import sync
+from sync import sync_config
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -54,7 +54,7 @@ if __name__ == '__main__':
                 p.delete(client)
     else:
         total_product_sync_start_time_ms = round(time.time() * 1000)
-        sync(client, config, open_api_basedir=args.openapi_basedir, parallel=args.parallel)
+        sync_config(client, config, open_api_basedir=args.openapi_basedir, parallel=args.parallel)
         total_product_sync_end_time_ms = round(time.time() * 1000)
         logger.info("Syncing configuration took {}s."
                     .format((total_product_sync_end_time_ms - total_product_sync_start_time_ms) / 1000))
