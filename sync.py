@@ -22,11 +22,15 @@ logger = logging.getLogger('sync')
 
 def sync_mappings(client: ThreeScaleClient, product: Product, product_config: ProductConfig,
                   proxy_mappings: List[ProxyMapping]):
+    # Combine active OpenAPI mappings with config mappings.
+    active_mappings = [(m.http_method, m.pattern) for m in proxy_mappings]
+    if product_config.mappings:
+        active_mappings += [(m.method, m.pattern) for m in product_config.mappings]
     # Delete extra mappings
     for mapping in ProxyMapping.list(client, product.id):
         should_be_active = True
-        for active_mapping in proxy_mappings:
-            if active_mapping.http_method == mapping.http_method and active_mapping.pattern == mapping.pattern:
+        for active_mapping in active_mappings:
+            if active_mapping == (mapping.http_method, mapping.pattern):
                 continue
             should_be_active = False
         if not should_be_active:
