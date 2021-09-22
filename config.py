@@ -37,7 +37,7 @@ class ProductConfig:
     def __init__(self, name: str, shortName: str, description: str, openAPIPath: Union[str, List[str]], version: int,
                  api: APIConfig,
                  backends: List[BackendConfig], applications: List[ApplicationConfig], stagingPublicURL=None,
-                 productionPublicURL=None):
+                 productionPublicURL=None, mappings: List[MappingConfig] = None):
         self.name = name
         self.shortName = shortName
         self.description = description
@@ -48,6 +48,7 @@ class ProductConfig:
         self.applications = applications
         self.stagingPublicURL = stagingPublicURL
         self.productionPublicURL = productionPublicURL
+        self.mappings = mappings
 
 
 class Config:
@@ -107,7 +108,8 @@ def parse_config(c: dict) -> Config:
                           oidcFlows=product['api']['authentication']['oidcFlows']
                           if 'oidcFlows' in product['api']['authentication'] else None),
             backends=[BackendConfig(**b) for b in product['backends']],
-            applications=[ApplicationConfig(**a) for a in product['applications']]
+            applications=[ApplicationConfig(**a) for a in product['applications']],
+            mappings=[MappingConfig(**m) for m in product['mappings']] if 'mappings' in product else None
         )
         products.append(p)
     return Config(c['environment'], products)

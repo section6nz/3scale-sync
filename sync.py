@@ -34,10 +34,21 @@ def sync_mappings(client: ThreeScaleClient, product: Product, product_config: Pr
 
     existing_mappings = ProxyMapping.list(client, product.id)
     hits_metric = Metric.fetch_hits_metric(client, product.id)
+    # Sync mappings defined in OpenAPI spec.
     for mappingConfig in proxy_mappings:
         mappingConfig.metric_id = hits_metric.id  # set metric id on mapping (required)
         mappingConfig.pattern = product_config.api.publicBasePath + mappingConfig.pattern
         mappingConfig.create(client, product.id, existing_mappings=existing_mappings)
+    # Sync mappings defined in config yaml.
+    if product_config.mappings:
+        for mappingConfig in product_config.mappings:
+            proxy_mapping = ProxyMapping(
+                metric_id=hits_metric.id,
+                http_method=mappingConfig.method,
+                pattern=mappingConfig.pattern,
+                delta=1)
+            proxy_mapping.create(client, product.id, existing_mappings=existing_mappings)
+
     # Fetch the final list of mappings from the server. Used for logging
     ProxyMapping.list(client, product.id)
 

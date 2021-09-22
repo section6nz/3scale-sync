@@ -12,6 +12,11 @@ An example configuration template is provided in config.yaml. General rules:
 - Application names and client IDs should be unique.
 - Backend IDs should be unique.
 
+## Mappings
+API path mapping are defined in a separate OpenAPI specification file. The path to this file is referenced in the 
+configuration file, using the `openAPIPath` key. Additional mapping patterns can be specified using the `mappings` 
+key, this can be useful if advanced patterns are required (for example, inexact matching).
+
 ### Reference
 
 ```yaml
@@ -36,6 +41,11 @@ products:
           implicitFlow: false
           serviceAccounts: true
           standardFlow: false
+    mappings: # Additional patterns not specified in OpenAPI spec (optional)
+      - method: GET
+        pattern: /api/test/1
+      - method: POST
+        pattern: /api/test/2$
     backends:
       - id: example_api_backend_name  # Backend system name.
         privateBaseURL: http://backend-service:8080 # Backend URL.

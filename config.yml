@@ -4,6 +4,11 @@ products:
     shortName: example-api-display-name
     description: Example API for automation
     openAPIPath: openapi.yml
+    mappings:
+      - method: GET
+        pattern: /api/test/1
+      - method: GET
+        pattern: /api/test/2$
     version: 1
     stagingPublicURL: https://staging-tenant-api.apps.integration-non-production.ds.ahunga.co.nz:443
 #    productionPublicURL: https://production-tenant-api.apps.integration-non-production.ds.ahunga.co.nz:443
