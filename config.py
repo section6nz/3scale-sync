@@ -107,9 +107,9 @@ def parse_config(c: dict) -> Config:
                           credentialsLocation=product['api']['authentication']['credentialsLocation'],
                           oidcFlows=product['api']['authentication']['oidcFlows']
                           if 'oidcFlows' in product['api']['authentication'] else None),
-            backends=[BackendConfig(**b) for b in product['backends']],
-            applications=[ApplicationConfig(**a) for a in product['applications']],
-            mappings=[MappingConfig(**m) for m in product['mappings']] if 'mappings' in product else None
+            backends=[BackendConfig(**b) for b in product['backends']] if product['backends'] else [],
+            applications=[ApplicationConfig(**a) for a in product['applications']] if product['applications'] else [],
+            mappings=[MappingConfig(**m) for m in product['mappings']] if 'mappings' in product else []
         )
         products.append(p)
     return Config(c['environment'], products)
