@@ -1,0 +1,17 @@
+[
+  {
+    "name": "headers",
+    "version": "builtin",
+    "configuration": {
+      "request": [
+        {
+          "value_type": "plain",
+          "op": "add",
+          "header": "Header",
+          "value": "HeaderValue"
+        }
+      ]
+    },
+    "enabled": true
+  }
+]

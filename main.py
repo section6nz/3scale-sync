@@ -26,6 +26,8 @@ if __name__ == '__main__':
     parser.add_argument('--config', dest='config', required=False, default='config.yml', help='Path to config file.')
     parser.add_argument('--openapi_basedir', dest='openapi_basedir', required=False, default='.',
                         help='Directory root of OpenAPI specification files.')
+    parser.add_argument('--policies_basedir', dest='policies_basedir', required=False, default='.',
+                        help='Directory root of the policy configuration file.')
     parser.add_argument('--delete', dest='delete', required=False, default=False, help='Delete all products.',
                         action='store_true')
     parser.add_argument('--parallel', dest='parallel', required=False, default=1, type=int,
@@ -54,7 +56,10 @@ if __name__ == '__main__':
                 p.delete(client)
     else:
         total_product_sync_start_time_ms = round(time.time() * 1000)
-        sync_config(client, config, open_api_basedir=args.openapi_basedir, parallel=args.parallel)
+        sync_config(client, config,
+                    open_api_basedir=args.openapi_basedir,
+                    policies_basedir=args.policies_basedir,
+                    parallel=args.parallel)
         total_product_sync_end_time_ms = round(time.time() * 1000)
         logger.info("Syncing configuration took {}s."
                     .format((total_product_sync_end_time_ms - total_product_sync_start_time_ms) / 1000))

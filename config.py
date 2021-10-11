@@ -44,16 +44,16 @@ class MappingConfig:
 class ProductConfig:
     def __init__(self, name: str, shortName: str, description: str, openAPIPath: Union[str, List[str]], version: int,
                  api: APIConfig,
-                 policies: List[PolicyConfig],
+                 policiesPath: str,
                  backends: List[BackendConfig], applications: List[ApplicationConfig], stagingPublicURL=None,
                  productionPublicURL=None, mappings: List[MappingConfig] = None):
         self.name = name
         self.shortName = shortName
         self.description = description
         self.openAPIPath = openAPIPath
+        self.policiesPath = policiesPath
         self.version = version
         self.api = api
-        self.policies = policies
         self.backends = backends
         self.applications = applications
         self.stagingPublicURL = stagingPublicURL
@@ -104,6 +104,7 @@ def parse_config(c: dict) -> Config:
             shortName=product['shortName'],
             description=product['description'],
             openAPIPath=product['openAPIPath'],
+            policiesPath=product['policiesPath'] if product['policiesPath'] else None,
             version=product['version'],
             stagingPublicURL=staging_public_url,
             productionPublicURL=product[
@@ -117,7 +118,6 @@ def parse_config(c: dict) -> Config:
                           credentialsLocation=product['api']['authentication']['credentialsLocation'],
                           oidcFlows=product['api']['authentication']['oidcFlows']
                           if 'oidcFlows' in product['api']['authentication'] else None),
-            policies=[PolicyConfig(**p) for p in product['policies']] if product['policies'] else [],
             backends=[BackendConfig(**b) for b in product['backends']] if product['backends'] else [],
             applications=[ApplicationConfig(**a) for a in product['applications']] if product['applications'] else [],
             mappings=[MappingConfig(**m) for m in product['mappings']] if 'mappings' in product else []
