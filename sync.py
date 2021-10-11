@@ -57,7 +57,7 @@ def sync_mappings(client: ThreeScaleClient, product: Product, product_config: Pr
     ProxyMapping.list(client, product.id)
 
 
-def sync_config(c: ThreeScaleClient, config: Config, open_api_basedir='.', parallel: int = 1):
+def sync_config(c: ThreeScaleClient, config: Config, open_api_basedir='.', policies_basedir='.', parallel: int = 1):
     # TODO: Create user if not exists
     # Product variables
     accounts = Account().list(c)
@@ -67,10 +67,10 @@ def sync_config(c: ThreeScaleClient, config: Config, open_api_basedir='.', paral
             process_pool.starmap(sync_product, arg_list)
     else:
         for product_config in config.products:
-            sync_product(config, accounts, c, open_api_basedir, product_config)
+            sync_product(config, accounts, c, open_api_basedir, policies_basedir, product_config)
 
 
-def sync_product(config, accounts, client, open_api_basedir, product_config):
+def sync_product(config, accounts, client, open_api_basedir, policies_basedir, product_config):
     environment = config.environment
     valid_methods = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace']
     # Performance timers
@@ -131,7 +131,8 @@ def sync_product(config, accounts, client, open_api_basedir, product_config):
                      endpoint=product_config.productionPublicURL)
     if product_config.api.oidcFlows:
         sync_oidc_flows(client, product, product_config)
-    sync_policies(client, product, product_config)
+    if product_config.policiesPath:
+        sync_policies(client, product, policies_basedir, product_config.policiesPath)
     sync_backends(client, environment, description, product, product_config)
     sync_mappings(client, product, product_config, proxy_mappings)
     # Promote configuration
@@ -201,18 +202,10 @@ def fetch_user_id(c: ThreeScaleClient, application_config: ApplicationConfig, ac
     return user_id
 
 
-def sync_policies(c: ThreeScaleClient, product: Product, product_config: ProductConfig):
-    policy_chain = []
-    for policy_config in product_config.policies:
-        policy = dict(
-            name=policy_config.name,
-            configuration=json.loads(policy_config.configuration),
-            version=policy_config.version,
-            enabled=policy_config.enabled
-        )
-        policy_chain.append(policy)
-
-    product.update_policies(c, json.dumps(policy_chain))
+def sync_policies(c: ThreeScaleClient, product: Product, basedir: str, filepath: str):
+    with open(os.path.join(basedir, filepath), 'r') as policesFile:
+        policies = json.loads(policesFile.read())
+    product.update_policies(c, json.dumps(policies))
 
 
 def sync_backends(c: ThreeScaleClient, environment: str, description: str, product: Product,

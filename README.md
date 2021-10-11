@@ -17,6 +17,10 @@ API path mapping are defined in a separate OpenAPI specification file. The path 
 configuration file, using the `openAPIPath` key. Additional mapping patterns can be specified using the `mappings` 
 key, this can be useful if advanced patterns are required (for example, inexact matching).
 
+## Policy configurations
+Policy configurations are defined in a separate json file using the `policiesPath` key. Note the 3scale APIcast
+policy is always added by default by 3scale, therefore there is no need to add the APIcast configuration to the file.
+
 ### Reference
 
 ```yaml
@@ -26,6 +30,7 @@ products:
     shortName: example-api-display-name     # Short name. This will be used as the system name.
     description: Example API for automation # Description
     openAPIPath: openapi.yml  # Path to OpenAPI definition.
+    policiesPath: policies.json # Path to Policy configurations.
     version: 1  # Version of this product.
     stagingPublicURL: https://staging-url.com # Staging Public Base URL (optional)
     productionPublicURL: https://production-url.com # Production Public Base URL (optional)
@@ -46,21 +51,6 @@ products:
         pattern: /api/test/1
       - method: POST
         pattern: /api/test/2$
-    policies:
-      - name: headers
-        version: builtin
-        enabled: true
-        configuration: >
-          {
-            "request": [
-              {
-                "value_type": "plain",
-                "op": "add",
-                "header": "Authorization",
-                "value": "Basic cGFzc3dvcmQ="
-              }
-            ]
-          }
     backends:
       - id: example_api_backend_name  # Backend system name.
         privateBaseURL: http://backend-service:8080 # Backend URL.
