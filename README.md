@@ -46,6 +46,21 @@ products:
         pattern: /api/test/1
       - method: POST
         pattern: /api/test/2$
+    policies:
+      - name: headers
+        version: builtin
+        enabled: true
+        configuration: >
+          {
+            "request": [
+              {
+                "value_type": "plain",
+                "op": "add",
+                "header": "Authorization",
+                "value": "Basic cGFzc3dvcmQ="
+              }
+            ]
+          }
     backends:
       - id: example_api_backend_name  # Backend system name.
         privateBaseURL: http://backend-service:8080 # Backend URL.

@@ -24,6 +24,21 @@ products:
           implicitFlow: false
           serviceAccounts: true
           standardFlow: false
+    policies:
+      - name: headers
+        version: builtin
+        enabled: true
+        configuration: >
+          {
+            "request": [
+              {
+                "value_type": "plain",
+                "op": "add",
+                "header": "Header",
+                "value": "HeaderValue"
+              }
+            ]
+          }
     backends:
       - id: example_api_backend_name
         privateBaseURL: http://backend-service:8080
