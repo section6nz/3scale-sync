@@ -115,6 +115,18 @@ class Product(Resource):
         # Delete service.
         client.services.delete(entity_id=self.id)
 
+    def update_policies(self, client: ThreeScaleClient, policy_chain: str):
+        api_url = f"{client.admin_api_url}/services/{self.id}/proxy/policies.json"
+        response = requests.put(api_url,
+                                data={
+                                    'access_token': client.token,
+                                    'policies_config': policy_chain
+                                })
+        self.logger.debug(response.text)
+        if not response.ok:
+            raise ValueError(
+                'Error updating policy chain: code={}, error={}'.format(response.status_code, response.text))
+
     def update_backends(self, client: ThreeScaleClient, backend_id: int, path: str, backend_usages=None):
         api_url = f"{client.admin_api_url}/services/{self.id}/backend_usages.json"
         backend = Backend.fetch_by_id(client, backend_id)

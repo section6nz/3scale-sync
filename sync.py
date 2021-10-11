@@ -131,6 +131,7 @@ def sync_product(config, accounts, client, open_api_basedir, product_config):
                      endpoint=product_config.productionPublicURL)
     if product_config.api.oidcFlows:
         sync_oidc_flows(client, product, product_config)
+    sync_policies(client, product, product_config)
     sync_backends(client, environment, description, product, product_config)
     sync_mappings(client, product, product_config, proxy_mappings)
     # Promote configuration
@@ -198,6 +199,20 @@ def fetch_user_id(c: ThreeScaleClient, application_config: ApplicationConfig, ac
         raise ValueError('User {} not found.'.format(application_config.account))
     user_id = users[0]
     return user_id
+
+
+def sync_policies(c: ThreeScaleClient, product: Product, product_config: ProductConfig):
+    policy_chain = []
+    for policy_config in product_config.policies:
+        policy = dict(
+            name=policy_config.name,
+            configuration=json.loads(policy_config.configuration),
+            version=policy_config.version,
+            enabled=policy_config.enabled
+        )
+        policy_chain.append(policy)
+
+    product.update_policies(c, json.dumps(policy_chain))
 
 
 def sync_backends(c: ThreeScaleClient, environment: str, description: str, product: Product,
