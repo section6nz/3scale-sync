@@ -104,7 +104,7 @@ def parse_config(c: dict) -> Config:
             shortName=product['shortName'],
             description=product['description'],
             openAPIPath=product['openAPIPath'],
-            policiesPath=product['policiesPath'] if product['policiesPath'] else None,
+            policiesPath=product['policiesPath'] if 'policiesPath' in product else None,
             version=product['version'],
             stagingPublicURL=staging_public_url,
             productionPublicURL=product[

@@ -62,7 +62,10 @@ def sync_config(c: ThreeScaleClient, config: Config, open_api_basedir='.', polic
     # Product variables
     accounts = Account().list(c)
     if parallel > 1:
-        arg_list = [(config, accounts, c, open_api_basedir, product_config) for product_config in config.products]
+        arg_list = [
+            (config, accounts, c, open_api_basedir, policies_basedir, product_config)
+            for product_config in config.products
+        ]
         with Pool(4) as process_pool:
             process_pool.starmap(sync_product, arg_list)
     else:
@@ -131,8 +134,7 @@ def sync_product(config, accounts, client, open_api_basedir, policies_basedir, p
                      endpoint=product_config.productionPublicURL)
     if product_config.api.oidcFlows:
         sync_oidc_flows(client, product, product_config)
-    if product_config.policiesPath:
-        sync_policies(client, product, policies_basedir, product_config.policiesPath)
+    sync_policies(client, product, policies_basedir, product_config.policiesPath)
     sync_backends(client, environment, description, product, product_config)
     sync_mappings(client, product, product_config, proxy_mappings)
     # Promote configuration
@@ -203,8 +205,18 @@ def fetch_user_id(c: ThreeScaleClient, application_config: ApplicationConfig, ac
 
 
 def sync_policies(c: ThreeScaleClient, product: Product, basedir: str, filepath: str):
+    logger.info("Updating policies.")
+    if filepath is None:
+        product.update_policies(c, '[]')
+        return
+
     with open(os.path.join(basedir, filepath), 'r') as policesFile:
-        policies = json.loads(policesFile.read())
+        try:
+            policies = json.loads(policesFile.read())
+        except ValueError as e:
+            logger.error("Decoding policies from {} has failed, please fix this".format(filepath))
+            raise e
+
     product.update_policies(c, json.dumps(policies))
 
 
