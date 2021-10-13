@@ -8,6 +8,7 @@ on:
       - "**.json"
       - "**.py"
       - "requirements.txt"
+  workflow_dispatch:
 
 concurrency:
   group: ci
