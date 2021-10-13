@@ -85,13 +85,14 @@ def sync_product(config, accounts, client, open_api_basedir, policies_basedir, p
     # Parse OpenAPI spec for product.
     logger.info("Loading mapping paths from OpenAPI config.")
     openapi_specs = []
-    if type(product_config.openAPIPath) is str:
-        openapi = parse_openapi_file(open_api_basedir, product_config.openAPIPath)
-        openapi_specs.append(openapi)
-    else:
-        for oas_file in product_config.openAPIPath:
-            openapi = parse_openapi_file(open_api_basedir, oas_file)
+    if product_config.openAPIPath:
+        if type(product_config.openAPIPath) is str:
+            openapi = parse_openapi_file(open_api_basedir, product_config.openAPIPath)
             openapi_specs.append(openapi)
+        else:
+            for oas_file in product_config.openAPIPath:
+                openapi = parse_openapi_file(open_api_basedir, oas_file)
+                openapi_specs.append(openapi)
     proxy_mappings = []
     for openapi in openapi_specs:
         openapi_version: str = openapi['swagger'] if 'swagger' in openapi else openapi['openapi']

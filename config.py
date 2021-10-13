@@ -95,6 +95,20 @@ class Config:
                                      "Please resolve before continuing. product={}".format(product.name))
 
 
+def _parse_applications(product_config: dict) -> List[ApplicationConfig]:
+    if 'applications' in product_config:
+        if product_config['applications']:
+            return [ApplicationConfig(**a) for a in product_config['applications']]
+    return []
+
+
+def _parse_backends(product_config: dict) -> List[BackendConfig]:
+    if 'backends' in product_config:
+        if product_config['backends']:
+            return [BackendConfig(**b) for b in product_config['backends']]
+    return []
+
+
 def parse_config(c: dict) -> Config:
     products = []
     for product in c['products']:
@@ -103,7 +117,7 @@ def parse_config(c: dict) -> Config:
             name=product['name'],
             shortName=product['shortName'],
             description=product['description'],
-            openAPIPath=product['openAPIPath'],
+            openAPIPath=product['openAPIPath'] if 'openAPIPath' in product else None,
             policiesPath=product['policiesPath'] if 'policiesPath' in product else None,
             version=product['version'],
             stagingPublicURL=staging_public_url,
@@ -118,8 +132,8 @@ def parse_config(c: dict) -> Config:
                           credentialsLocation=product['api']['authentication']['credentialsLocation'],
                           oidcFlows=product['api']['authentication']['oidcFlows']
                           if 'oidcFlows' in product['api']['authentication'] else None),
-            backends=[BackendConfig(**b) for b in product['backends']] if product['backends'] else [],
-            applications=[ApplicationConfig(**a) for a in product['applications']] if product['applications'] else [],
+            backends=_parse_backends(product),
+            applications=_parse_applications(product),
             mappings=[MappingConfig(**m) for m in product['mappings']] if 'mappings' in product else []
         )
         products.append(p)
