@@ -19,7 +19,7 @@ key, this can be useful if advanced patterns are required (for example, inexact 
 
 ## Policy configurations
 Policy configurations are defined in a separate json file using the `policiesPath` key. Note the 3scale APIcast
-policy is always added by default by 3scale, therefore there is no need to add the APIcast configuration to the file.
+policy is always added to the bottom of the policy chain by default by 3scale.
 
 ### Reference
 
