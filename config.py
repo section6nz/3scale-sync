@@ -1,4 +1,7 @@
+import logging
 from typing import List, Union
+
+import validators
 
 
 class APIConfig:
@@ -62,11 +65,15 @@ class ProductConfig:
 
 
 class Config:
+    logger = logging.getLogger(__name__)
+
     def __init__(self, environment, products: List[ProductConfig]):
         self.environment = environment
         self.products = products
 
     def validate(self):
+        self.logger.info("Validating sync configuration.")
+
         err_reason = "This will lead to system name conflicts. Please resolve this before continuing."
         # Ensure product system names are unique.
         system_names = [p.shortName for p in self.products]
@@ -93,6 +100,14 @@ class Config:
             if len(paths) > 1 and len(paths) != len(set(paths)):
                 raise AssertionError("ABORT: Backend paths are not unique. "
                                      "Please resolve before continuing. product={}".format(product.name))
+
+        # Ensure backend URLs are valid.
+        for product in self.products:
+            for backend in product.backends:
+                # Validate privateBaseURL.
+                if not validators.url(backend.privateBaseURL):
+                    raise AssertionError("ABORT: Backend privateBaseURL is not a valid URL. url={}",
+                                         backend.privateBaseURL)
 
 
 def _parse_applications(product_config: dict) -> List[ApplicationConfig]:
