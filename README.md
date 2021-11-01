@@ -19,7 +19,48 @@ key, this can be useful if advanced patterns are required (for example, inexact 
 
 ## Policy configurations
 Policy configurations are defined in a separate json file using the `policiesPath` key. Note the 3scale APIcast
-policy is always added to the bottom of the policy chain by default by 3scale.
+policy _must_ be included as the first policy in the chain, since 3scale will always add this to the bottom of the 
+policy if not specified.
+
+Example policy configuration file to set default credentials and setting a header for a product:
+
+```json
+{
+ "policies_config": [
+  {
+   "name": "apicast",
+   "version": "builtin",
+   "configuration": {},
+   "enabled": true
+  },
+  {
+   "name": "default_credentials",
+   "version": "builtin",
+   "configuration": {
+    "auth_type": "app_id_and_app_key",
+    "app_key": "test_key",
+    "app_id": "test_password"
+   },
+   "enabled": true
+  },
+   {
+     "name": "headers",
+     "version": "builtin",
+     "configuration": {
+       "request": [
+         {
+           "value_type": "plain",
+           "op": "set",
+           "header": "X-API-KEY",
+           "value": "example-api-key"
+         }
+       ]
+     },
+     "enabled": true
+   }
+ ]
+}
+```
 
 ### Reference
 
