@@ -1,7 +1,8 @@
 import logging
+import re
 from typing import List, Union
 
-import validators
+import urllib3.util
 
 
 class APIConfig:
@@ -101,13 +102,21 @@ class Config:
                 raise AssertionError("ABORT: Backend paths are not unique. "
                                      "Please resolve before continuing. product={}".format(product.name))
 
-        # Ensure backend URLs are valid.
+        # Ensure backend hostnames are valid.
         for product in self.products:
             for backend in product.backends:
-                # Validate privateBaseURL.
-                if not validators.url(backend.privateBaseURL):
-                    raise AssertionError("ABORT: Backend privateBaseURL is not a valid URL. url={}",
-                                         backend.privateBaseURL)
+                # Validate privateBaseURL hostname.
+                url = urllib3.util.parse_url(backend.privateBaseURL)
+                hostname = url.netloc.split(':')[0]
+                if not self._is_fqdn(hostname):
+                    raise AssertionError(
+                        "ABORT: Backend privateBaseURL does not contain a valid hostname. hostname={}", hostname)
+
+    # Validate hostname
+    @staticmethod
+    def _is_fqdn(hostname):
+        return re.match("^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9]["
+                        "A-Za-z0-9\-]*[A-Za-z0-9])$", hostname)
 
 
 def _parse_applications(product_config: dict) -> List[ApplicationConfig]:
