@@ -32,8 +32,13 @@ if __name__ == '__main__':
                         action='store_true')
     parser.add_argument('--parallel', dest='parallel', required=False, default=1, type=int,
                         help='Parallel execution threads for product sync')
+    parser.add_argument('--debug', dest='debug', required=False, default=False, help='Enable verbose logging.',
+                        action='store_true')
     args = parser.parse_args()
     client = ThreeScaleClient(url=args.url, token=args.token, ssl_verify=True)
+
+    if args.debug:
+        logger.setLevel(logging.DEBUG)
 
     with open(args.config, 'r') as f:
         loaded_config = yaml.load(f.read(), Loader=yaml.FullLoader)
