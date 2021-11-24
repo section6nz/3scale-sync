@@ -8,6 +8,8 @@ from xml.etree import ElementTree
 import requests
 from threescale_api import ThreeScaleClient
 
+from config import Config
+
 
 class AuthenticationType(Enum):
     APP_KEY = 1
@@ -100,7 +102,7 @@ class Proxy:
 
     def fetch(self, client: ThreeScaleClient) -> Union[Proxy, None]:
         api_url = f"{client.admin_api_url}/services/{self.service_id}/proxy"
-        proxy_response = requests.get(api_url, params={'access_token': client.token})
+        proxy_response = requests.get(api_url, params={'access_token': client.token}, verify=Config.SSL_VERIFY)
         proxy_xml = ElementTree.fromstring(proxy_response.text)
         kwargs = dict()
         for attrib in proxy_xml:
@@ -139,7 +141,7 @@ class Proxy:
             endpoint=endpoint
         )
         self.logger.debug(proxy_params)
-        proxy_response = requests.patch(api_url, params={'access_token': client.token}, data=proxy_params)
+        proxy_response = requests.patch(api_url, params={'access_token': client.token}, data=proxy_params, verify=Config.SSL_VERIFY)
         self.logger.debug(proxy_response.text)
         if not proxy_response.ok:
             raise ValueError('Error updating proxy: code={}, error={}', proxy_response.status_code, proxy_response.text)
@@ -147,7 +149,7 @@ class Proxy:
 
     def fetch_latest_configuration(self, client: ThreeScaleClient, environment: str) -> dict:
         api_url = f"{client.admin_api_url}/services/{self.service_id}/proxy/configs/{environment}/latest.json"
-        response = requests.get(api_url, params={'access_token': client.token})
+        response = requests.get(api_url, params={'access_token': client.token}, verify=Config.SSL_VERIFY)
         if not response.ok:
             raise ValueError(
                 'Error fetching latest proxy version: service_id={}, environment={}, code={}, error={}'.format(
@@ -173,7 +175,7 @@ class Proxy:
             version=latest_version,
             to=environment
         )
-        response = requests.post(api_url, params={'access_token': client.token}, data=promote_args)
+        response = requests.post(api_url, params={'access_token': client.token}, data=promote_args, verify=Config.SSL_VERIFY)
         self.logger.debug(response.text)
         if not response.ok:
             if response.status_code == 422:
@@ -214,7 +216,7 @@ class ProxyMapping:
     def list(client: ThreeScaleClient, service_id: int) -> List[ProxyMapping]:
         logger = logging.getLogger('proxy_mapping')
         api_url = f"{client.admin_api_url}/services/{service_id}/proxy/mapping_rules.json"
-        response = requests.get(api_url, params={'access_token': client.token})
+        response = requests.get(api_url, params={'access_token': client.token}, verify=Config.SSL_VERIFY)
         logger.debug(response.text)
         mapping_rules_json = response.json()['mapping_rules']
         logger.info("Found {} proxy mappings.".format(len(mapping_rules_json)))
@@ -257,7 +259,7 @@ class ProxyMapping:
             delta=self.delta,
             metric_id=self.metric_id,
         )
-        response = requests.post(api_url, params={'access_token': client.token}, data=mapping_params)
+        response = requests.post(api_url, params={'access_token': client.token}, data=mapping_params, verify=Config.SSL_VERIFY)
         self.logger.debug(response.text)
         if not response.ok:
             raise ValueError('Error creating proxy mapping: service={}, args={}, code={}, error={}'
@@ -267,7 +269,7 @@ class ProxyMapping:
 
     def delete(self, client: ThreeScaleClient, service_id: int):
         api_url = f"{client.admin_api_url}/services/{service_id}/proxy/mapping_rules/{self.id}.json"
-        response = requests.delete(api_url, params={'access_token': client.token})
+        response = requests.delete(api_url, params={'access_token': client.token}, verify=Config.SSL_VERIFY)
         self.logger.debug(response.text)
         if not response.ok:
             raise ValueError('Error deleting proxy mapping: service={}, id={}, code={}, error={}'

@@ -6,6 +6,7 @@ from typing import Union, List
 import requests
 from threescale_api import ThreeScaleClient
 
+from config import Config
 from resources.resource import Resource
 
 
@@ -69,7 +70,7 @@ class Backend(Resource):
 
     def update(self, client: ThreeScaleClient, **kwargs) -> Backend:
         api_url = f"{client.admin_api_url}/backend_apis/{self.id}.json"
-        response = requests.put(api_url, params={'access_token': client.token}, data=kwargs)
+        response = requests.put(api_url, params={'access_token': client.token}, data=kwargs, verify=Config.SSL_VERIFY)
         self.logger.debug(response.text)
         if not response.ok:
             raise ValueError(
@@ -101,7 +102,7 @@ class BackendUsage:
 
     def list(self, client: ThreeScaleClient) -> List[BackendUsage]:
         api_url = f"{client.admin_api_url}/services/{self.service_id}/backend_usages.json"
-        response = requests.get(api_url, params={'access_token': client.token})
+        response = requests.get(api_url, params={'access_token': client.token}, verify=Config.SSL_VERIFY)
         self.logger.debug(response.text)
         if not response.ok:
             raise ValueError(
@@ -111,7 +112,7 @@ class BackendUsage:
     def delete(self, client: ThreeScaleClient):
         self.logger.info('Deleting backend usage for backend_id={}'.format(self.id))
         api_url = f"{client.admin_api_url}/services/{self.service_id}/backend_usages/{self.id}.json"
-        response = requests.delete(api_url, params={'access_token': client.token})
+        response = requests.delete(api_url, params={'access_token': client.token}, verify=Config.SSL_VERIFY)
         self.logger.debug(response.text)
         if not response.ok:
             raise ValueError(
@@ -119,7 +120,7 @@ class BackendUsage:
 
     def update(self, client: ThreeScaleClient, **kwargs):
         api_url = f"{client.admin_api_url}/services/{self.service_id}/backend_usages/{self.id}.json"
-        response = requests.put(api_url, params={'access_token': client.token}, data=kwargs)
+        response = requests.put(api_url, params={'access_token': client.token}, data=kwargs, verify=Config.SSL_VERIFY)
         self.logger.debug(response.text)
         if not response.ok:
             raise ValueError(

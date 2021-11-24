@@ -69,6 +69,8 @@ class ProductConfig:
 class Config:
     logger = logging.getLogger(__name__)
 
+    SSL_VERIFY = True  # Global SSL verification configuration. Enabled by default.
+
     def __init__(self, environment, products: List[ProductConfig]):
         self.environment = environment
         self.products = products

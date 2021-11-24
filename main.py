@@ -7,7 +7,7 @@ import time
 import yaml
 from threescale_api import ThreeScaleClient
 
-from config import parse_config
+from config import parse_config, Config
 from resources.product import Product
 from sync import sync_config
 
@@ -34,8 +34,14 @@ if __name__ == '__main__':
                         help='Parallel execution threads for product sync')
     parser.add_argument('--debug', dest='debug', required=False, default=False, help='Enable verbose logging.',
                         action='store_true')
+    parser.add_argument('--no-ssl', dest='ssl_disabled', required=False, default=False,
+                        help='Verify SSL certificates.', action="store_true")
     args = parser.parse_args()
-    client = ThreeScaleClient(url=args.url, token=args.token, ssl_verify=True)
+    Config.SSL_VERIFY = not args.ssl_disabled
+    client = ThreeScaleClient(url=args.url, token=args.token, ssl_verify=Config.SSL_VERIFY)
+
+    if not Config.SSL_VERIFY:
+        logger.warning("SSL certificate verification disabled.")
 
     if args.debug:
         logger.setLevel(logging.DEBUG)

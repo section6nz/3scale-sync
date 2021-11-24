@@ -6,6 +6,8 @@ from typing import List
 import requests
 from threescale_api import ThreeScaleClient
 
+from config import Config
+
 
 class Metric:
     def __init__(self,
@@ -32,7 +34,7 @@ class Metric:
     def list(client: ThreeScaleClient, service_id: int) -> List[Metric]:
         logger = logging.getLogger('metric')
         api_url = f"{client.admin_api_url}/services/{service_id}/metrics.json"
-        response = requests.get(api_url, params={'access_token': client.token})
+        response = requests.get(api_url, params={'access_token': client.token}, verify=Config.SSL_VERIFY)
         logger.debug(response.text)
         metrics_json = response.json()['metrics']
         return [Metric(**m['metric']) for m in metrics_json]

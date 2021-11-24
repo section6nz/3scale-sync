@@ -7,6 +7,7 @@ from xml.etree import ElementTree
 import requests
 from threescale_api import ThreeScaleClient
 
+from config import Config
 from resources.resource import Resource
 
 
@@ -106,7 +107,7 @@ class Application(Resource):
         response = requests.post(api_url, params={
             'access_token': client.token,
             **params
-        })
+        }, verify=Config.SSL_VERIFY)
         self.logger.debug(response.text)
         if not response.ok:
             raise ValueError(
@@ -118,7 +119,7 @@ class Application(Resource):
         if not application:
             raise ValueError('Application {} does not exist for deletion'.format(self.name))
         api_url = f"{client.admin_api_url}/accounts/{self.account_id}/applications/{application.id}"
-        response = requests.delete(api_url, params={'access_token': client.token})
+        response = requests.delete(api_url, params={'access_token': client.token}, verify=Config.SSL_VERIFY)
         if not response.ok:
             raise ValueError('Error deleting application: name={}, code={}, error={}'
                              .format(self.name, response.status_code, response.text))
@@ -145,7 +146,8 @@ class Application(Resource):
         for user_account in filtered_users:
             user_resource = list(filter(lambda u: u.entity_name == user_account, accounts))[0]
             applications_list_response = requests.get(
-                user_resource.applications.url + '.json', params={'access_token': client.token})
+                user_resource.applications.url + '.json', params={'access_token': client.token},
+                verify=Config.SSL_VERIFY)
             if not applications_list_response.ok:
                 raise ValueError(
                     'Applications list request failed with {}, error={}, url={}'.format(
@@ -160,7 +162,7 @@ class Application(Resource):
 
     def update(self, client: ThreeScaleClient, **kwargs) -> Application:
         api_url = f"{client.admin_api_url}/accounts/{self.account_id}/applications/{self.id}.json"
-        response = requests.put(api_url, params={'access_token': client.token}, data=kwargs)
+        response = requests.put(api_url, params={'access_token': client.token}, data=kwargs, verify=Config.SSL_VERIFY)
         self.logger.debug(response.text)
         if not response.ok:
             raise ValueError(
@@ -219,7 +221,8 @@ class ApplicationPlan:
         service = client.services.fetch(service_id)
         if not service:
             raise ValueError('Unable to find service id: {}'.format(service_id))
-        application_plans_response = requests.get(api_url, params={'access_token': client.token})
+        application_plans_response = requests.get(api_url, params={'access_token': client.token},
+                                                  verify=Config.SSL_VERIFY)
         logger.debug(application_plans_response.text)
         if not application_plans_response.ok:
             raise ValueError('Error retrieving application plans, code={}, error={}'.format(
@@ -253,7 +256,8 @@ class ApplicationPlan:
             name=self.name,
             system_name=self.system_name
         )
-        response = requests.post(api_url, params={'access_token': client.token}, data=plan_args)
+        response = requests.post(api_url, params={'access_token': client.token}, data=plan_args,
+                                 verify=Config.SSL_VERIFY)
         self.logger.debug(response.text)
         if not response.ok:
             raise ValueError(
@@ -263,7 +267,7 @@ class ApplicationPlan:
 
     def delete(self, client: ThreeScaleClient, service_id: int):
         api_url = f"{client.admin_api_url}/services/{service_id}/application_plans/{self.id}"
-        response = requests.delete(api_url, params={'access_token': client.token})
+        response = requests.delete(api_url, params={'access_token': client.token}, verify=Config.SSL_VERIFY)
         if not response.ok:
             raise ValueError('Error deleting application plan with service={}, id={}, code={}, error={}'
                              .format(service_id, self.id, response.status_code, response.text))
@@ -289,7 +293,7 @@ class ApplicationOIDCConfiguration:
     @staticmethod
     def fetch(client: ThreeScaleClient, service_id: int) -> Union[ApplicationOIDCConfiguration, None]:
         api_url = f"{client.admin_api_url}/services/{service_id}/proxy/oidc_configuration"
-        oidc_configuration_response = requests.get(api_url, params={'access_token': client.token})
+        oidc_configuration_response = requests.get(api_url, params={'access_token': client.token}, verify=Config.SSL_VERIFY)
         if not oidc_configuration_response.ok:
             raise ValueError(
                 'Applications list request failed with {}, error={}, url={}'.format(
@@ -312,7 +316,7 @@ class ApplicationOIDCConfiguration:
             service_accounts_enabled=str(self.service_accounts_enabled).lower(),
             direct_access_grants_enabled=str(self.direct_access_grants_enabled).lower()
         )
-        oidc_response = requests.patch(api_url, params={'access_token': client.token}, data=oidc_params)
+        oidc_response = requests.patch(api_url, params={'access_token': client.token}, data=oidc_params, verify=Config.SSL_VERIFY)
         self.logger.debug(oidc_response.text)
         if not oidc_response.ok:
             raise ValueError('Error updating proxy: code={}, error={}', oidc_response.status_code, oidc_response.text)

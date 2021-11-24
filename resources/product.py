@@ -6,6 +6,7 @@ from typing import Union
 import requests
 from threescale_api import ThreeScaleClient
 
+from config import Config
 from resources.backend import Backend, BackendUsage
 from resources.resource import Resource
 
@@ -67,7 +68,7 @@ class Product(Resource):
 
     def update(self, client: ThreeScaleClient, params: dict):
         api_url = f"{client.admin_api_url}/services/{self.id}.json"
-        response = requests.put(api_url, params={'access_token': client.token}, data=params)
+        response = requests.put(api_url, params={'access_token': client.token}, data=params, verify=Config.SSL_VERIFY)
         self.logger.debug(response.text)
         if not response.ok:
             raise ValueError(
@@ -121,7 +122,7 @@ class Product(Resource):
                                 data={
                                     'access_token': client.token,
                                     'policies_config': policy_chain
-                                })
+                                }, verify=Config.SSL_VERIFY)
         self.logger.debug(response.text)
         if not response.ok:
             raise ValueError(
@@ -147,7 +148,8 @@ class Product(Resource):
                 return
 
         self.logger.info('Backend usage does not exist for path=\'{}\'. Creating'.format(path))
-        response = requests.post(api_url, params={'access_token': client.token}, data=backend_args)
+        response = requests.post(api_url, params={'access_token': client.token}, data=backend_args,
+                                 verify=Config.SSL_VERIFY)
         if not response.ok:
             raise ValueError(
                 'Error updating backend usages: code={}, error={}'.format(response.status_code, response.text))
