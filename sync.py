@@ -2,7 +2,6 @@ import json
 import logging
 import os.path
 import time
-from multiprocessing import Pool
 from typing import List
 from urllib.parse import urljoin
 
@@ -57,20 +56,37 @@ def sync_mappings(client: ThreeScaleClient, product: Product, product_config: Pr
     ProxyMapping.list(client, product.id)
 
 
-def sync_config(c: ThreeScaleClient, config: Config, open_api_basedir='.', policies_basedir='.', parallel: int = 1):
-    # TODO: Create user if not exists
-    # Product variables
-    accounts = Account().list(c)
-    if parallel > 1:
-        arg_list = [
-            (config, accounts, c, open_api_basedir, policies_basedir, product_config)
-            for product_config in config.products
-        ]
-        with Pool(4) as process_pool:
-            process_pool.starmap(sync_product, arg_list)
+def start_sync_for_one_config(client: ThreeScaleClient, config: Config, args):
+    Config.SSL_VERIFY = not args.ssl_disabled
+    if args.delete:
+        response = input("WARNING --- Deleting all products in the configuration. Are you sure? y/N: ")
+        if response.upper() == 'Y':
+            logger.warning(
+                "Deleting {} products: {}".format(len(config.products), [p.name for p in config.products]))
+            for config_product in config.products:
+                system_name = config_product.shortName.replace('-', '_').replace(' ', '_')
+                p = Product().fetch(client, system_name)
+                if not p:
+                    logger.error(
+                        'Could not find product: {}, system_name={}'.format(config_product.name, system_name))
+                    exit(1)
+                p.delete(client)
     else:
-        for product_config in config.products:
-            sync_product(config, accounts, c, open_api_basedir, policies_basedir, product_config)
+        total_product_sync_start_time_ms = round(time.time() * 1000)
+        sync_config(client, config,
+                    open_api_basedir=args.openapi_basedir,
+                    policies_basedir=args.policies_basedir)
+        total_product_sync_end_time_ms = round(time.time() * 1000)
+        logger.info("Syncing configuration '{}' took {}s."
+                    .format(config.filename, (total_product_sync_end_time_ms - total_product_sync_start_time_ms) /
+                            1000))
+
+
+def sync_config(c: ThreeScaleClient, config: Config, open_api_basedir='.', policies_basedir='.'):
+    # TODO: Create user if not exists
+    accounts = Account().list(c)
+    for product_config in config.products:
+        sync_product(config, accounts, c, open_api_basedir, policies_basedir, product_config)
 
 
 def sync_product(config, accounts, client, open_api_basedir, policies_basedir, product_config):

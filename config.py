@@ -71,9 +71,10 @@ class Config:
 
     SSL_VERIFY = True  # Global SSL verification configuration. Enabled by default.
 
-    def __init__(self, environment, products: List[ProductConfig]):
+    def __init__(self, environment, products: List[ProductConfig], filename=None):
         self.environment = environment
         self.products = products
+        self.filename = filename
 
     def validate(self):
         self.logger.info("Validating sync configuration.")
@@ -173,3 +174,11 @@ def parse_config(c: dict) -> Config:
         )
         products.append(p)
     return Config(c['environment'], products)
+
+
+def combine_configs(c1: Config, c2: Config) -> Config:
+    c1.products += c2.products
+    # Unset metadata
+    c1.environment = None
+    c1.filename = None
+    return c1
