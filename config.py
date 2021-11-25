@@ -1,3 +1,4 @@
+import collections
 import logging
 import re
 from typing import List, Union
@@ -79,6 +80,8 @@ class Config:
         # Ensure product system names are unique.
         system_names = [p.shortName for p in self.products]
         if len(system_names) > 1 and len(system_names) != len(set(system_names)):
+            duplicates = [x for x, n in collections.Counter(system_names).items() if n > 1]
+            self.logger.error("Duplicated: {}".format(duplicates))
             raise AssertionError("ABORT: Product short names are not unique. " + err_reason)
 
         backend_names = []
@@ -89,16 +92,22 @@ class Config:
 
         # Ensure backend names are unique.
         if len(backend_names) > 1 and len(backend_names) != len(set(backend_names)):
+            duplicates = [x for x, n in collections.Counter(backend_names).items() if n > 1]
+            self.logger.error("Duplicated: {}".format(duplicates))
             raise AssertionError("ABORT: Backend ids are not unique. " + err_reason)
 
         # Ensure application names are unique.
         if len(application_names) > 1 and len(application_names) != len(set(application_names)):
+            duplicates = [x for x, n in collections.Counter(application_names).items() if n > 1]
+            self.logger.error("Duplicated: {}".format(duplicates))
             raise AssertionError("ABORT: Application names are not unique. " + err_reason)
 
         # Ensure backend paths are not duplicated.
         for product in self.products:
             paths = [b.path for b in product.backends]
             if len(paths) > 1 and len(paths) != len(set(paths)):
+                duplicates = [x for x, n in collections.Counter(paths).items() if n > 1]
+                self.logger.error("Duplicated: {}".format(duplicates))
                 raise AssertionError("ABORT: Backend paths are not unique. "
                                      "Please resolve before continuing. product={}".format(product.name))
 
