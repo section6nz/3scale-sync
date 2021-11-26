@@ -57,6 +57,7 @@ def sync_mappings(client: ThreeScaleClient, product: Product, product_config: Pr
 
 
 def start_sync_for_one_config(client: ThreeScaleClient, config: Config, args):
+    # Class variable needs to be set once per process when using a multiprocessing pool.
     Config.SSL_VERIFY = not args.ssl_disabled
     if args.delete:
         response = input("WARNING --- Deleting all products in the configuration. Are you sure? y/N: ")
