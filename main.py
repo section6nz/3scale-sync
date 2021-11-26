@@ -50,6 +50,9 @@ if __name__ == '__main__':
     if not Config.SSL_VERIFY:
         logger.warning("SSL certificate verification disabled.")
 
+    if args.debug:
+        logger.setLevel(logging.DEBUG)
+
     # Validation across all configuration files.
     if args.validation_basedir:
         configs_for_validation = []
@@ -82,8 +85,6 @@ if __name__ == '__main__':
             config.validate()
             config.filename = config_file
             configs.append(config)
-    if args.debug:
-        logger.setLevel(logging.DEBUG)
 
     total_sync_start_time_ms = round(time.time() * 1000)
     if args.parallel > 1:
