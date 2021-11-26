@@ -35,7 +35,7 @@ if __name__ == '__main__':
     parser.add_argument('--debug', dest='debug', required=False, default=False, help='Enable verbose logging.',
                         action='store_true')
     parser.add_argument('--no-ssl', dest='ssl_disabled', required=False, default=False,
-                        help='Verify SSL certificates.', action="store_true")
+                        help='Disable SSL verification.', action="store_true")
     args = parser.parse_args()
     Config.SSL_VERIFY = not args.ssl_disabled
     client = ThreeScaleClient(url=args.url, token=args.token, ssl_verify=Config.SSL_VERIFY)
