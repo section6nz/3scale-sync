@@ -85,14 +85,6 @@ if __name__ == '__main__':
     if args.debug:
         logger.setLevel(logging.DEBUG)
 
-    with open(args.config, 'r') as f:
-        loaded_config = yaml.load(f.read(), Loader=yaml.FullLoader)
-        if not loaded_config:
-            raise ValueError('Invalid config!')
-
-    config = parse_config(loaded_config)
-    config.validate()
-
     total_sync_start_time_ms = round(time.time() * 1000)
     if args.parallel > 1:
         arg_list = [(client, config, args) for config in configs]
