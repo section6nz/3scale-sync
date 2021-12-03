@@ -106,5 +106,15 @@ products:
 ## Usage
 
 ```bash
-main.py --3scale_url=${TENANT_URL} --access_token=${TOKEN} [--config=config.yml]
+main.py --3scale_url=${TENANT_URL} --access_token=${TOKEN} [--config=config.yml ...]
 ```
+
+### Useful options
+- Multiple configuration files can be specified by repeating the `--config` flag, or configurations in a directory can 
+  be synced recursively by specifying the `--config_dir` flag.
+- The root path for OpenAPI files can be specified using the `--openapi_basedir` flag.
+- The root path for policy files can be specified using the `--policies_basedir` flag.
+- The root path for validation (ensuring system names are globally unique etc) can be specified using the 
+  `--validation_basedir` flag.
+- To sync multiple files in parallel, use the `--parallel` flag to specify the number of parallel processes to use 
+  (one process per file).
