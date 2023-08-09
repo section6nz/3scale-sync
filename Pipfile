@@ -5,7 +5,7 @@ name = "pypi"
 
 [packages]
 3scale-api = "==0.13.0"
-requests = "~=2.25.1"
+requests = "~=2.31.0"
 pyyaml = "~=6.0.1"
 
 [dev-packages]
