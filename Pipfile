@@ -1,0 +1,14 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+3scale-api = "==0.13.0"
+requests = "~=2.25.1"
+pyyaml = "~=6.0.1"
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"
